@@ -57,13 +57,15 @@ async def submit_analysis(
     await db.commit()
     await db.refresh(task)
     
-    # TODO: Enqueue Celery task
-    # process_financial_analysis.delay(
-    #     task_id=str(task.task_id),
-    #     ticker=request.ticker,
-    #     focus_area=request.focus_area,
-    #     filing_year=request.filing_year
-    # )
+    # Enqueue Celery task for background processing
+    from app.worker.tasks import process_financial_analysis
+    
+    process_financial_analysis.delay(
+        task_id=str(task.task_id),
+        ticker=request.ticker,
+        focus_area=request.focus_area,
+        filing_year=request.filing_year
+    )
     
     return TaskResponse(
         task_id=task.task_id,
