@@ -242,4 +242,4 @@ MIT License - feel free to use this project as a portfolio piece!
 
 Built as a portfolio project to demonstrate production-grade software engineering skills.
 
-**Contact**: [Your Email/LinkedIn]
+**Contact**: harshithdshetty@gmail.com
