@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api.routes import analyze, tasks
+from app.api.routes import analyze, tasks, auth
 
 
 @asynccontextmanager
@@ -50,8 +50,10 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)  # Auth endpoints
 app.include_router(analyze.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(tasks.router, prefix="/api/v1", tags=["Tasks"])
+
 
 
 @app.get("/")
