@@ -2,7 +2,7 @@
 Pydantic schemas for request/response validation.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -17,7 +17,131 @@ class TaskStatusEnum(str, Enum):
     FAILED = "FAILED"
 
 
-# Request Schemas
+class ProcessingStatusEnum(str, Enum):
+    """Document processing status enum."""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ChatModeEnum(str, Enum):
+    """Chat mode enum."""
+    HYBRID = "hybrid"
+    PRIVATE = "private"
+
+
+class MessageRoleEnum(str, Enum):
+    """Message role enum."""
+    USER = "user"
+    ASSISTANT = "assistant"
+
+
+# ============ Authentication Schemas ============
+
+class UserRegister(BaseModel):
+    """User registration request."""
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+
+
+class UserLogin(BaseModel):
+    """User login request."""
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    """JWT token response."""
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    """User info response."""
+    id: UUID
+    email: str
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    
+    model_config = {"from_attributes": True}
+
+
+# ============ Document Schemas ============
+
+class DocumentUploadResponse(BaseModel):
+    """Response after document upload."""
+    id: UUID
+    filename: str
+    file_size: int
+    processing_status: ProcessingStatusEnum
+    upload_date: datetime
+    
+    model_config = {"from_attributes": True}
+
+
+class DocumentListResponse(BaseModel):
+    """Document list item."""
+    id: UUID
+    filename: str
+    file_size: Optional[int]
+    file_type: Optional[str]
+    processing_status: ProcessingStatusEnum
+    upload_date: datetime
+    
+    model_config = {"from_attributes": True}
+
+
+# ============ Chat Schemas ============
+
+class ChatCreate(BaseModel):
+    """Create new chat request."""
+    title: Optional[str] = None
+    mode: ChatModeEnum
+
+
+class ChatResponse(BaseModel):
+    """Chat info response."""
+    id: UUID
+    title: Optional[str]
+    mode: ChatModeEnum
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = {"from_attributes": True}
+
+
+class ChatListResponse(BaseModel):
+    """Chat list response."""
+    chats: List[ChatResponse]
+
+
+# ============ Message Schemas ============
+
+class MessageCreate(BaseModel):
+    """Send message request."""
+    content: str = Field(..., min_length=1, description="Message content")
+
+
+class MessageResponse(BaseModel):
+    """Message response."""
+    id: UUID
+    role: MessageRoleEnum
+    content: str
+    metadata: Optional[dict] = None
+    created_at: datetime
+    
+    model_config = {"from_attributes": True}
+
+
+class ChatHistoryResponse(BaseModel):
+    """Chat history response."""
+    chat_id: UUID
+    messages: List[MessageResponse]
+
+
+# ============ Existing Analysis Schemas ============
+
 class AnalysisRequest(BaseModel):
     """Request schema for POST /api/v1/analyze."""
     ticker: str = Field(..., min_length=1, max_length=10, description="Stock ticker symbol")
@@ -43,7 +167,6 @@ class AnalysisRequest(BaseModel):
     }
 
 
-# Response Schemas
 class TaskResponse(BaseModel):
     """Response schema for task creation."""
     task_id: UUID
