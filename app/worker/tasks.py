@@ -8,7 +8,7 @@ from datetime import datetime
 import asyncio
 
 from app.worker.celery_app import celery_app
-from app.models.database import AnalysisTask, TaskStatus
+from app.models.database import AnalysisTask, TaskStatus, Document, ProcessingStatus
 from app.core.database import AsyncSessionLocal
 from app.services.rag_pipeline import RAGPipeline
 
@@ -111,6 +111,107 @@ async def _process_analysis_async(
                     error_log=error_message,
                     completed_at=datetime.utcnow()
                 )
+            )
+            await db.commit()
+            
+            return {"status": "failed", "error": error_message}
+
+
+@celery_app.task(bind=True, name="process_document")
+def process_document_task(
+    self,
+    document_id: str,
+    user_id: str,
+    file_path: str,
+    file_type: str,
+    filename: str
+):
+    """
+    Background task for processing uploaded documents.
+    
+    This task:
+    1. Updates document status to PROCESSING
+    2. Parses document based on file type
+    3. Chunks text
+    4. Generates embeddings
+    5. Stores in user-specific Qdrant collection
+    6. Updates document status to COMPLETED
+    
+    Args:
+        document_id: UUID of the document
+        user_id: UUID of the user
+        file_path: Path to uploaded file
+        file_type: File extension (.pdf, .txt, .docx)
+        filename: Original filename
+    """
+    # Run async code in sync context
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(
+        _process_document_async(document_id, user_id, file_path, file_type, filename)
+    )
+
+
+async def _process_document_async(
+    document_id: str,
+    user_id: str,
+    file_path: str,
+    file_type: str,
+    filename: str
+):
+    """Async implementation of document processing task."""
+    
+    async with AsyncSessionLocal() as db:
+        try:
+            # Update status to PROCESSING
+            await db.execute(
+                update(Document)
+                .where(Document.id == document_id)
+                .values(processing_status=ProcessingStatus.PROCESSING)
+            )
+            await db.commit()
+            
+            # Parse document
+            from app.services.document_processor import DocumentProcessor
+            processor = DocumentProcessor()
+            text = processor.parse_document(file_path, file_type)
+            
+            # Chunk text
+            chunks = processor.chunk_text(text)
+            
+            # Generate embeddings
+            from app.services.embeddings import EmbeddingGenerator
+            embedding_gen = EmbeddingGenerator()
+            embeddings = await embedding_gen.generate_embeddings(chunks)
+            
+            # Store in Qdrant
+            from app.services.vector_store import QdrantVectorStore
+            vector_store = QdrantVectorStore()
+            await vector_store.upsert_user_vectors(
+                user_id=user_id,
+                document_id=document_id,
+                filename=filename,
+                chunks=chunks,
+                embeddings=embeddings
+            )
+            
+            # Update status to COMPLETED
+            await db.execute(
+                update(Document)
+                .where(Document.id == document_id)
+                .values(processing_status=ProcessingStatus.COMPLETED)
+            )
+            await db.commit()
+            
+            return {"status": "success", "document_id": document_id, "chunks": len(chunks)}
+            
+        except Exception as e:
+            # Update status to FAILED
+            error_message = f"{type(e).__name__}: {str(e)}"
+            
+            await db.execute(
+                update(Document)
+                .where(Document.id == document_id)
+                .values(processing_status=ProcessingStatus.FAILED)
             )
             await db.commit()
             

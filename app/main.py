@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api.routes import analyze, tasks, auth
+from app.api.routes import analyze, tasks, auth, documents, chats, messages
 
 
 @asynccontextmanager
@@ -19,8 +19,15 @@ async def lifespan(app: FastAPI):
     # Startup
     print(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     print(f"📊 LLM Provider: {settings.LLM_PROVIDER.upper()}")
+    
+    # Initialize database connection
     await init_db()
     print("✅ Database initialized")
+    
+    # Run migrations automatically
+    from app.services.migrations import run_migrations, verify_database
+    await run_migrations()
+    await verify_database()
     
     yield
     
@@ -51,8 +58,12 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)  # Auth endpoints
+app.include_router(documents.router)  # Document management
+app.include_router(chats.router, prefix="/api/v1", tags=["Chats"])  # Chat management
+app.include_router(messages.router, prefix="/api/v1", tags=["Messages"])  # Messages
 app.include_router(analyze.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(tasks.router, prefix="/api/v1", tags=["Tasks"])
+
 
 
 

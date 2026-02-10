@@ -14,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U finsight"]
+      test: [ "CMD-SHELL", "pg_isready -U finsight -d finsight_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,7 +47,7 @@ services:
     environment:
       QDRANT__SERVICE__GRPC_PORT: 6334
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:6333/health" ]
       interval: 10s
       timeout: 5s
       retries: 5

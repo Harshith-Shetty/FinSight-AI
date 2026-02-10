@@ -3,7 +3,7 @@ Qdrant vector store operations.
 """
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
 from typing import List, Dict, Any
 import uuid
 
@@ -17,6 +17,7 @@ class QdrantVectorStore:
     """
     
     COLLECTION_NAME = "financial_filings"
+    SYSTEM_KB_COLLECTION = "system_knowledge_base"
     VECTOR_DIMENSION = 384  # all-MiniLM-L6-v2 dimension
     
     def __init__(self):
@@ -43,6 +44,146 @@ class QdrantVectorStore:
                 )
         except Exception as e:
             raise VectorStoreError(f"Failed to create collection: {str(e)}")
+    
+    def create_user_collection(self, user_id: str):
+        """
+        Create a user-specific collection if it doesn't exist.
+        
+        Args:
+            user_id: User UUID
+        """
+        collection_name = f"user_{user_id}_documents"
+        
+        try:
+            collections = self.client.get_collections().collections
+            collection_names = [c.name for c in collections]
+            
+            if collection_name not in collection_names:
+                self.client.create_collection(
+                    collection_name=collection_name,
+                    vectors_config=VectorParams(
+                        size=self.VECTOR_DIMENSION,
+                        distance=Distance.COSINE
+                    )
+                )
+        except Exception as e:
+            raise VectorStoreError(f"Failed to create user collection: {str(e)}")
+    
+    async def upsert_user_vectors(
+        self,
+        user_id: str,
+        document_id: str,
+        filename: str,
+        chunks: List[str],
+        embeddings: Any  # numpy array
+    ):
+        """
+        Store user document chunks and embeddings in user-specific collection.
+        
+        Args:
+            user_id: User UUID
+            document_id: Document UUID
+            filename: Original filename
+            chunks: List of text chunks
+            embeddings: Numpy array of embeddings
+        """
+        collection_name = f"user_{user_id}_documents"
+        
+        # Ensure collection exists
+        self.create_user_collection(user_id)
+        
+        try:
+            points = []
+            for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                point = PointStruct(
+                    id=f"{document_id}_chunk_{idx}",
+                    vector=embedding.tolist(),
+                    payload={
+                        "document_id": document_id,
+                        "user_id": user_id,
+                        "filename": filename,
+                        "chunk_id": idx,
+                        "text": chunk
+                    }
+                )
+                points.append(point)
+            
+            # Batch upsert
+            self.client.upsert(
+                collection_name=collection_name,
+                points=points
+            )
+            
+        except Exception as e:
+            raise VectorStoreError(f"Failed to upsert user vectors: {str(e)}")
+    
+    async def delete_user_document(self, user_id: str, document_id: str):
+        """
+        Delete all vectors for a specific document.
+        
+        Args:
+            user_id: User UUID
+            document_id: Document UUID
+        """
+        collection_name = f"user_{user_id}_documents"
+        
+        try:
+            # Delete all points with matching document_id
+            self.client.delete(
+                collection_name=collection_name,
+                points_selector={
+                    "filter": Filter(
+                        must=[
+                            FieldCondition(
+                                key="document_id",
+                                match=MatchValue(value=document_id)
+                            )
+                        ]
+                    )
+                }
+            )
+        except Exception as e:
+            raise VectorStoreError(f"Failed to delete document vectors: {str(e)}")
+    
+    async def search_user_documents(
+        self,
+        user_id: str,
+        query_embedding: Any,  # numpy array
+        top_k: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Search user's documents using vector similarity.
+        
+        Args:
+            user_id: User UUID
+            query_embedding: Query vector
+            top_k: Number of results to return
+            
+        Returns:
+            List of matching chunks with metadata
+        """
+        collection_name = f"user_{user_id}_documents"
+        
+        try:
+            results = self.client.search(
+                collection_name=collection_name,
+                query_vector=query_embedding.tolist(),
+                limit=top_k
+            )
+            
+            return [
+                {
+                    "text": hit.payload["text"],
+                    "filename": hit.payload.get("filename", "unknown"),
+                    "document_id": hit.payload["document_id"],
+                    "chunk_id": hit.payload["chunk_id"],
+                    "score": hit.score
+                }
+                for hit in results
+            ]
+            
+        except Exception as e:
+            raise VectorStoreError(f"Failed to search user documents: {str(e)}")
     
     async def upsert_vectors(
         self,
