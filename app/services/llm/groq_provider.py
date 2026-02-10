@@ -5,7 +5,8 @@ Used for development - fast, free, production-quality inference.
 
 from groq import AsyncGroq
 from app.services.llm.base import LLMProvider
-from app.core.config import Settings
+from app.core.config import settings
+from typing import AsyncGenerator, Optional
 import json
 
 
@@ -17,33 +18,84 @@ class GroqProvider(LLMProvider):
     Perfect for development and can be used in production with free tier.
     """
     
-    def __init__(self, config: Settings):
-        self.api_key = config.GROQ_API_KEY
-        self.model = config.GROQ_MODEL
+    def __init__(self):
+        self.api_key = settings.GROQ_API_KEY
+        self.model = settings.GROQ_MODEL
         self.client = AsyncGroq(api_key=self.api_key)
     
     async def generate(
         self, 
         prompt: str, 
-        context: str,
+        context: Optional[str] = None,
         temperature: float = 0.3,
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
+        json_mode: bool = False
     ) -> str:
-        """Generate response using Groq API."""
-        messages = self._build_messages(prompt, context)
+        """
+        Generate response using Groq API.
+        
+        Args:
+            prompt: User prompt or question
+            context: Optional context (for analysis tasks)
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            json_mode: Whether to use JSON response format
+        
+        Returns:
+            Generated text response
+        """
+        if context:
+            # Analysis mode - structured JSON output
+            messages = self._build_messages(prompt, context)
+            response_format = {"type": "json_object"} if json_mode else None
+        else:
+            # Chat mode - simple prompt
+            messages = [{"role": "user", "content": prompt}]
+            response_format = None
         
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            response_format={"type": "json_object"}  # Structured output
+            response_format=response_format
         )
         
         return response.choices[0].message.content
     
+    async def stream(
+        self,
+        prompt: str,
+        temperature: float = 0.3,
+        max_tokens: int = 1000
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream response from Groq API.
+        
+        Args:
+            prompt: User prompt
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+        
+        Yields:
+            Text chunks as they are generated
+        """
+        messages = [{"role": "user", "content": prompt}]
+        
+        stream = await self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True
+        )
+        
+        async for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
     def _build_messages(self, prompt: str, context: str) -> list:
-        """Build chat messages for Groq API."""
+        """Build chat messages for Groq API (analysis mode)."""
         system_prompt = """You are a senior financial analyst with expertise in SEC filings analysis.
 Analyze the provided context from SEC filings and answer the user's question accurately.
 
