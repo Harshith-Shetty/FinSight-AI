@@ -2,14 +2,54 @@
 SQLAlchemy ORM models for FinSight AI.
 """
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum, Text, Integer, Index, Boolean
+from sqlalchemy import Column, String, DateTime, ForeignKey, Enum, Text, Integer, Index, Boolean, Date
+from sqlalchemy.types import TypeDecorator
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, date
 import uuid
 import enum
 
 from app.core.database import Base
+
+
+class UserRole(enum.Enum):
+    """User role enum for RBAC."""
+    ADMIN   = "admin"
+    PREMIUM = "premium"
+    NORMAL  = "normal"
+    GUEST   = "guest"
+
+
+class SafeUserRole(TypeDecorator):
+    """Safely converts between DB enum/string and Python UserRole enum, case-insensitively."""
+    impl = String(20)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, UserRole):
+            return value.value.upper()
+        return str(value).upper()
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        val_upper = str(value).upper()
+        for r in UserRole:
+            if r.value.upper() == val_upper:
+                return r
+        return UserRole.NORMAL
+
+
+# Token limits per role (None = unlimited)
+ROLE_TOKEN_LIMITS: dict = {
+    UserRole.GUEST:   20_000,
+    UserRole.NORMAL:  100_000,
+    UserRole.PREMIUM: 500_000,
+    UserRole.ADMIN:   None,
+}
 
 
 class TaskStatus(enum.Enum):
@@ -30,8 +70,8 @@ class ProcessingStatus(enum.Enum):
 
 class ChatMode(enum.Enum):
     """Chat mode enum."""
-    HYBRID = "hybrid"  # Uses system KB + user documents
-    PRIVATE = "private"  # Uses only user documents
+    HYBRID = "HYBRID"  # Uses system KB + user documents
+    PRIVATE = "PRIVATE"  # Uses only user documents
 
 
 class MessageRole(enum.Enum):
@@ -44,20 +84,22 @@ class User(Base):
     """User model for authentication and authorization."""
     __tablename__ = "users"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String(255), unique=True, nullable=False, index=True)
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email         = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    api_key_hash = Column(String(255), nullable=True)  # Optional API key for programmatic access
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    last_login = Column(DateTime, nullable=True)
+    api_key_hash  = Column(String(255), nullable=True)
+    role          = Column(SafeUserRole, default=UserRole.NORMAL, nullable=False)
+    created_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_login    = Column(DateTime, nullable=True)
     
     # Relationships
-    tasks = relationship("AnalysisTask", back_populates="user", cascade="all, delete-orphan")
-    documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
-    chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")
+    tasks         = relationship("AnalysisTask", back_populates="user", cascade="all, delete-orphan")
+    documents     = relationship("Document",     back_populates="user", cascade="all, delete-orphan")
+    chats         = relationship("Chat",         back_populates="user", cascade="all, delete-orphan")
+    token_usages  = relationship("TokenUsage",   back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<User(id={self.id}, email={self.email})>"
+        return f"<User(id={self.id}, email={self.email}, role={self.role})>"
 
 
 class Document(Base):
@@ -95,6 +137,7 @@ class Chat(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(255), nullable=True)
     mode = Column(Enum(ChatMode), nullable=False)
+    is_deleted = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -160,3 +203,24 @@ class AnalysisTask(Base):
     
     def __repr__(self):
         return f"<AnalysisTask(task_id={self.task_id}, ticker={self.ticker_symbol}, status={self.status})>"
+
+
+class TokenUsage(Base):
+    """Tracks monthly token consumption per user for quota enforcement."""
+    __tablename__ = "token_usage"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month      = Column(Date, nullable=False)          # Always first day of the month, e.g. 2026-05-01
+    tokens_used = Column(Integer, default=0, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="token_usages")
+
+    __table_args__ = (
+        Index('idx_token_usage_user_month', 'user_id', 'month', unique=True),
+    )
+
+    def __repr__(self):
+        return f"<TokenUsage(user_id={self.user_id}, month={self.month}, tokens={self.tokens_used})>"

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.database import User, ChatMode
 from app.models.schemas import ChatCreate, ChatResponse, ChatListResponse
-from app.api.routes.auth import get_current_user
+from app.api.deps import get_current_user
 from app.services.chat_service import ChatService
 
 router = APIRouter(prefix="/chats", tags=["Chats"])
@@ -39,7 +39,7 @@ async def create_chat(
     return chat
 
 
-@router.get("", response_model=List[ChatListResponse])
+@router.get("", response_model=List[ChatResponse])
 async def list_chats(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

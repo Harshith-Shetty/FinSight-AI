@@ -124,30 +124,17 @@ def process_document_task(
     user_id: str,
     file_path: str,
     file_type: str,
-    filename: str
+    filename: str,
+    is_public: bool = False,
 ):
     """
     Background task for processing uploaded documents.
-    
-    This task:
-    1. Updates document status to PROCESSING
-    2. Parses document based on file type
-    3. Chunks text
-    4. Generates embeddings
-    5. Stores in user-specific Qdrant collection
-    6. Updates document status to COMPLETED
-    
-    Args:
-        document_id: UUID of the document
-        user_id: UUID of the user
-        file_path: Path to uploaded file
-        file_type: File extension (.pdf, .txt, .docx)
-        filename: Original filename
+    If is_public=True, stores vectors in system_knowledge_base collection.
+    Otherwise stores in the per-user collection.
     """
-    # Run async code in sync context
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
-        _process_document_async(document_id, user_id, file_path, file_type, filename)
+        _process_document_async(document_id, user_id, file_path, file_type, filename, is_public)
     )
 
 
@@ -156,7 +143,8 @@ async def _process_document_async(
     user_id: str,
     file_path: str,
     file_type: str,
-    filename: str
+    filename: str,
+    is_public: bool = False,
 ):
     """Async implementation of document processing task."""
     
@@ -183,16 +171,24 @@ async def _process_document_async(
             embedding_gen = EmbeddingGenerator()
             embeddings = await embedding_gen.generate_embeddings(chunks)
             
-            # Store in Qdrant
+            # Store in Qdrant — route to system KB or per-user collection
             from app.services.vector_store import QdrantVectorStore
             vector_store = QdrantVectorStore()
-            await vector_store.upsert_user_vectors(
-                user_id=user_id,
-                document_id=document_id,
-                filename=filename,
-                chunks=chunks,
-                embeddings=embeddings
-            )
+            if is_public:
+                await vector_store.upsert_system_kb_vectors(
+                    document_id=document_id,
+                    filename=filename,
+                    chunks=chunks,
+                    embeddings=embeddings
+                )
+            else:
+                await vector_store.upsert_user_vectors(
+                    user_id=user_id,
+                    document_id=document_id,
+                    filename=filename,
+                    chunks=chunks,
+                    embeddings=embeddings
+                )
             
             # Update status to COMPLETED
             await db.execute(

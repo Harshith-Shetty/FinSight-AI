@@ -43,18 +43,20 @@ class RAGService:
         query_embedding = await self.embedding_gen.generate_embeddings([query])
         query_vector = query_embedding[0]  # numpy array
         
-        # Search user documents (all results from user docs)
-        user_k = top_k
+        # Search user documents
         user_results = await self.vector_store.search_user_documents(
             user_id=str(user_id),
             query_embedding=query_vector,
-            limit=user_k
+            top_k=top_k
+        )
+
+        # Search system knowledge base
+        system_results = await self.vector_store.search_system_kb(
+            query_embedding=query_vector,
+            top_k=top_k
         )
         
-        # For now, return only user results
-        # TODO: Add system knowledge base search when system KB is populated
         all_results = []
-        
         for result in user_results:
             all_results.append({
                 "text": result.get("text", ""),
@@ -63,10 +65,16 @@ class RAGService:
                 "document_id": result.get("document_id"),
                 "metadata": result
             })
+        for result in system_results:
+            all_results.append({
+                "text": result.get("text", ""),
+                "score": result.get("score", 0.0),
+                "source": "system",
+                "document_id": result.get("document_id"),
+                "metadata": result
+            })
         
-        # Sort by score descending
         all_results.sort(key=lambda x: x["score"], reverse=True)
-        
         return all_results[:top_k]
     
     async def query_private_mode(
@@ -94,7 +102,7 @@ class RAGService:
         user_results = await self.vector_store.search_user_documents(
             user_id=str(user_id),
             query_embedding=query_vector,
-            limit=top_k
+            top_k=top_k
         )
         
         results = []
@@ -188,12 +196,13 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
         prompt = self.build_rag_prompt(query, context, mode)
         
         # Generate response
-        response_text = await self.llm_provider.generate(prompt)
+        response_text, tokens_used = await self.llm_provider.generate(prompt)
         
         return {
             "text": response_text,
             "sources": context,
-            "mode": mode.value
+            "mode": mode.value,
+            "tokens_used": tokens_used,
         }
     
     async def generate_response_stream(
@@ -224,8 +233,15 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
         # Build prompt
         prompt = self.build_rag_prompt(query, context, mode)
         
-        # Stream response from LLM
+        # Stream response from LLM — last yielded item is __TOKENS__:N sentinel
+        total_tokens = 0
         async for chunk in self.llm_provider.stream(prompt):
+            if chunk.startswith("__TOKENS__:"):
+                try:
+                    total_tokens = int(chunk.split(":", 1)[1])
+                except ValueError:
+                    pass
+                continue  # Don't forward sentinel to caller
             yield {
                 "type": "chunk",
                 "content": chunk
@@ -238,5 +254,6 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
         }
         
         yield {
-            "type": "done"
+            "type": "done",
+            "tokens_used": total_tokens,
         }

@@ -92,7 +92,7 @@ class DocumentProcessor:
         
         if file_type == 'pdf':
             return DocumentProcessor.parse_pdf(file_path)
-        elif file_type == 'txt':
+        elif file_type in ('txt', 'md'):
             return DocumentProcessor.parse_txt(file_path)
         elif file_type == 'docx':
             return DocumentProcessor.parse_docx(file_path)

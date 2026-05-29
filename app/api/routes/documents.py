@@ -11,8 +11,8 @@ import uuid as uuid_lib
 from pathlib import Path
 
 from app.models.schemas import DocumentUploadResponse, DocumentListResponse
-from app.models.database import Document, User, ProcessingStatus
-from app.api.routes.auth import get_current_user
+from app.models.database import Document, User, ProcessingStatus, UserRole
+from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.worker.tasks import process_document_task
 
@@ -40,6 +40,12 @@ async def upload_document(
     
     Returns document ID and processing status.
     """
+    if str(current_user.role).upper() == "GUEST":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Guest users are not allowed to upload documents. Please upgrade your account."
+        )
+
     # Validate file extension
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in ALLOWED_EXTENSIONS:
@@ -109,7 +115,10 @@ async def list_documents(
     """
     result = await db.execute(
         select(Document)
-        .where(Document.user_id == current_user.id)
+        .where(
+            Document.user_id == current_user.id,
+            Document.is_system_doc == False
+        )
         .order_by(Document.upload_date.desc())
     )
     documents = result.scalars().all()
@@ -189,4 +198,57 @@ async def get_document_status(
             detail="Document not found"
         )
     
+    return document
+
+
+@router.post("/{document_id}/reprocess", response_model=DocumentListResponse)
+async def reprocess_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Re-queue a FAILED document for processing.
+    Only the owning user can retry their own documents.
+    """
+    result = await db.execute(
+        select(Document).where(
+            Document.id == document_id,
+            Document.user_id == current_user.id
+        )
+    )
+    document = result.scalar_one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    if document.processing_status != ProcessingStatus.FAILED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Document is not in FAILED state (current: {document.processing_status.value})"
+        )
+
+    if not os.path.exists(document.file_path):
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Source file no longer exists on disk. Please re-upload the document."
+        )
+
+    # Reset status and re-enqueue
+    document.processing_status = ProcessingStatus.PENDING
+    await db.commit()
+    await db.refresh(document)
+
+    process_document_task.delay(
+        document_id=str(document.id),
+        user_id=str(current_user.id),
+        file_path=document.file_path,
+        file_type=document.file_type or "",
+        filename=document.filename,
+        is_public=document.is_system_doc,
+    )
+
     return document

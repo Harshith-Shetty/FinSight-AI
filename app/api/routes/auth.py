@@ -8,11 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
 
-from app.models.schemas import UserRegister, UserLogin, Token, UserResponse
+from app.models.schemas import UserRegister, UserLogin, Token, UserResponse, TokenUsageResponse
 from app.models.database import User
 from app.services.auth import get_password_hash, verify_password, create_access_token, decode_access_token
 from app.core.database import get_db
-
+from app.core.permissions import get_token_quota_status
+from app.api.deps import get_current_user
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 security = HTTPBearer()
 
@@ -129,41 +130,16 @@ async def get_current_user_info(
     return user
 
 
-# Dependency to get current user (for use in other endpoints)
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+
+@router.get("/me/tokens", response_model=TokenUsageResponse)
+async def get_current_user_tokens(
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> User:
+):
     """
-    Dependency to get the current authenticated user.
-    Use this in other endpoints that require authentication.
+    Get current user's token usage and quota for the month.
     """
-    token = credentials.credentials
-    payload = decode_access_token(token)
-    
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload"
-        )
-    
-    result = await db.execute(
-        select(User).where(User.id == user_id)
-    )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return user
+    quota = await get_token_quota_status(current_user, db)
+    return quota
+
+

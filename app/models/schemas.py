@@ -27,14 +27,22 @@ class ProcessingStatusEnum(str, Enum):
 
 class ChatModeEnum(str, Enum):
     """Chat mode enum."""
-    HYBRID = "hybrid"
-    PRIVATE = "private"
+    HYBRID = "HYBRID"
+    PRIVATE = "PRIVATE"
 
 
 class MessageRoleEnum(str, Enum):
     """Message role enum."""
     USER = "user"
     ASSISTANT = "assistant"
+
+
+class UserRoleEnum(str, Enum):
+    """User role enum."""
+    ADMIN   = "admin"
+    PREMIUM = "premium"
+    NORMAL  = "normal"
+    GUEST   = "guest"
 
 
 # ============ Authentication Schemas ============
@@ -61,10 +69,41 @@ class UserResponse(BaseModel):
     """User info response."""
     id: UUID
     email: str
+    role: UserRoleEnum
     created_at: datetime
     last_login: Optional[datetime] = None
     
     model_config = {"from_attributes": True}
+
+
+# ============ Token Usage Schemas ============
+
+class TokenUsageResponse(BaseModel):
+    """Token usage for current month."""
+    tokens_used: int
+    limit: Optional[int]          # None = unlimited (Admin)
+    remaining: Optional[int]      # None = unlimited
+    month: str                    # ISO date string e.g. "2026-05-01"
+    is_over_limit: bool
+
+
+# ============ Admin Schemas ============
+
+class UserAdminResponse(BaseModel):
+    """User info for admin listing."""
+    id: UUID
+    email: str
+    role: UserRoleEnum
+    created_at: datetime
+    last_login: Optional[datetime] = None
+    tokens_used_this_month: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class UpdateUserRoleRequest(BaseModel):
+    """Request to change a user's role."""
+    role: UserRoleEnum
 
 
 # ============ Document Schemas ============
@@ -73,9 +112,10 @@ class DocumentUploadResponse(BaseModel):
     """Response after document upload."""
     id: UUID
     filename: str
-    file_size: int
+    file_size: Optional[int]
     processing_status: ProcessingStatusEnum
     upload_date: datetime
+    is_system_doc: bool = False
     
     model_config = {"from_attributes": True}
 
@@ -88,6 +128,7 @@ class DocumentListResponse(BaseModel):
     file_type: Optional[str]
     processing_status: ProcessingStatusEnum
     upload_date: datetime
+    is_system_doc: bool = False
     
     model_config = {"from_attributes": True}
 
@@ -128,10 +169,10 @@ class MessageResponse(BaseModel):
     id: UUID
     role: MessageRoleEnum
     content: str
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = Field(None, validation_alias="message_metadata")
     created_at: datetime
     
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class ChatHistoryResponse(BaseModel):

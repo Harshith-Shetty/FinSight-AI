@@ -54,6 +54,9 @@ logs/
 htmlcov/
 .tox/
 
+# Uploads
+uploads/*
+
 # Docker
 docker-compose.override.yml
 
@@ -63,3 +66,7 @@ Thumbs.db
 
 # Alembic
 alembic/versions/*.pyc
+test_document.txt
+test_upload.ps1
+
+scripts/ingest_system_kb.py

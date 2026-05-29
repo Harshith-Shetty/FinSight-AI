@@ -44,6 +44,16 @@ async def migrate_and_verify():
             print("✅ Made api_key_hash nullable")
         except Exception as e:
             print(f"⚠️  api_key_hash update: {e}")
+            
+        # Update chats table - add soft delete column
+        try:
+            await conn.execute(text("""
+                ALTER TABLE chats 
+                ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
+            """))
+            print("✅ Updated chats table with is_deleted column")
+        except Exception as e:
+            print(f"⚠️  Chats table update: {e}")
     
     print("\n✅ Database migration completed!")
     
