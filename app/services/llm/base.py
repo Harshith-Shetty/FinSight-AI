@@ -4,7 +4,7 @@ Implements Strategy Pattern for provider switching.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class LLMProvider(ABC):
@@ -19,7 +19,7 @@ class LLMProvider(ABC):
     async def generate(
         self, 
         prompt: str, 
-        context: str,
+        context: Optional[str] = None,
         temperature: float = 0.3,
         max_tokens: int = 1000
     ) -> str:

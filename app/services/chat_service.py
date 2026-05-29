@@ -67,7 +67,7 @@ class ChatService:
         """
         result = await db.execute(
             select(Chat)
-            .where(Chat.user_id == user_id)
+            .where(Chat.user_id == user_id, Chat.is_deleted == False)
             .order_by(Chat.updated_at.desc())
             .limit(limit)
         )
@@ -93,7 +93,7 @@ class ChatService:
         """
         result = await db.execute(
             select(Chat)
-            .where(Chat.id == chat_id, Chat.user_id == user_id)
+            .where(Chat.id == chat_id, Chat.user_id == user_id, Chat.is_deleted == False)
         )
         
         return result.scalar_one_or_none()
@@ -120,7 +120,7 @@ class ChatService:
         if not chat:
             return False
         
-        await db.delete(chat)
+        chat.is_deleted = True
         await db.commit()
         
         return True

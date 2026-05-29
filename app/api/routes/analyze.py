@@ -11,12 +11,16 @@ from app.models.schemas import AnalysisRequest, TaskResponse, TaskStatusEnum
 from app.models.database import AnalysisTask, TaskStatus
 from app.core.database import get_db
 
+from app.core.permissions import check_token_quota
+from app.models.database import User
+
 router = APIRouter()
 
 
 @router.post("/analyze", response_model=TaskResponse, status_code=status.HTTP_202_ACCEPTED)
 async def submit_analysis(
     request: AnalysisRequest,
+    current_user: User = Depends(check_token_quota),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -43,13 +47,10 @@ async def submit_analysis(
     ```
     """
     # Create task record
-    # Using the actual test user ID from database
-    from uuid import UUID
-    test_user_id = UUID("cb54c103-a6bb-4c78-93d8-c62081976933")
     
     task = AnalysisTask(
         task_id=uuid4(),
-        user_id=test_user_id,
+        user_id=current_user.id,
         ticker_symbol=request.ticker,
         status=TaskStatus.PENDING,
         focus_area=request.focus_area,

@@ -18,9 +18,10 @@ class GroqProvider(LLMProvider):
     Perfect for development and can be used in production with free tier.
     """
     
-    def __init__(self):
-        self.api_key = settings.GROQ_API_KEY
-        self.model = settings.GROQ_MODEL
+    def __init__(self, config=None):
+        cfg = config or settings
+        self.api_key = cfg.GROQ_API_KEY
+        self.model = cfg.GROQ_MODEL
         self.client = AsyncGroq(api_key=self.api_key)
     
     async def generate(
@@ -61,6 +62,9 @@ class GroqProvider(LLMProvider):
             response_format=response_format
         )
         
+        tokens_used = response.usage.total_tokens if response.usage else 0
+        # To record token usage here we'd need to emit an event or track it
+        # but for now, conform to the interface by returning only the content string
         return response.choices[0].message.content
     
     async def stream(
@@ -87,12 +91,19 @@ class GroqProvider(LLMProvider):
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            stream=True
+            stream=True,
         )
         
+        total_chars = 0
         async for chunk in stream:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+            if chunk.choices and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                total_chars += len(content)
+                yield content
+        
+        # Estimate token usage safely (approx 4 chars per token)
+        total_tokens = int(total_chars * 0.25) + len(prompt) // 4
+        yield f"__TOKENS__:{total_tokens}"
     
     def _build_messages(self, prompt: str, context: str) -> list:
         """Build chat messages for Groq API (analysis mode)."""

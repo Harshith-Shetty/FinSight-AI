@@ -95,8 +95,10 @@ class QdrantVectorStore:
         try:
             points = []
             for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                # Qdrant requires UUID or unsigned int — use deterministic UUID5
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{document_id}_chunk_{idx}"))
                 point = PointStruct(
-                    id=f"{document_id}_chunk_{idx}",
+                    id=point_id,
                     vector=embedding.tolist(),
                     payload={
                         "document_id": document_id,
@@ -165,6 +167,14 @@ class QdrantVectorStore:
         collection_name = f"user_{user_id}_documents"
         
         try:
+            # Check if the user's collection exists first
+            collections = self.client.get_collections().collections
+            collection_names = [c.name for c in collections]
+            
+            if collection_name not in collection_names:
+                # No documents uploaded yet — return empty results
+                return []
+            
             results = self.client.search(
                 collection_name=collection_name,
                 query_vector=query_embedding.tolist(),
@@ -270,3 +280,90 @@ class QdrantVectorStore:
             
         except Exception as e:
             raise VectorStoreError(f"Failed to search vectors: {str(e)}")
+
+    # ──────────────────────────────────────────────
+    # System Knowledge Base methods
+    # ──────────────────────────────────────────────
+
+    def _ensure_system_kb_collection(self):
+        """Create system_knowledge_base collection if it doesn't exist."""
+        try:
+            collections = self.client.get_collections().collections
+            names = [c.name for c in collections]
+            if self.SYSTEM_KB_COLLECTION not in names:
+                self.client.create_collection(
+                    collection_name=self.SYSTEM_KB_COLLECTION,
+                    vectors_config=VectorParams(
+                        size=self.VECTOR_DIMENSION,
+                        distance=Distance.COSINE
+                    )
+                )
+        except Exception as e:
+            raise VectorStoreError(f"Failed to create system KB collection: {str(e)}")
+
+    async def upsert_system_kb_vectors(
+        self,
+        document_id: str,
+        filename: str,
+        chunks: List[str],
+        embeddings: List,
+    ):
+        """Store document chunks in the shared system_knowledge_base collection."""
+        try:
+            self._ensure_system_kb_collection()
+            points = []
+            for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{document_id}_chunk_{idx}"))
+                points.append(PointStruct(
+                    id=point_id,
+                    vector=embedding.tolist(),
+                    payload={
+                        "document_id": document_id,
+                        "filename": filename,
+                        "chunk_id": idx,
+                        "text": chunk,
+                        "source": "system",
+                    }
+                ))
+
+            batch_size = 100
+            for i in range(0, len(points), batch_size):
+                response = self.client.upsert(
+                    collection_name=self.SYSTEM_KB_COLLECTION,
+                    points=points[i:i + batch_size],
+                    wait=True
+                )
+                if hasattr(response, 'status') and str(response.status) not in ('ok', 'UpdateStatus.Completed'):
+                    raise VectorStoreError(f"Unexpected Response: {response.status}")
+
+        except VectorStoreError:
+            raise
+        except Exception as e:
+            raise VectorStoreError(f"Failed to upsert system KB vectors: {str(e)}")
+
+    async def search_system_kb(
+        self,
+        query_embedding,
+        top_k: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Search the system knowledge base (all public documents)."""
+        try:
+            self._ensure_system_kb_collection()
+            results = self.client.search(
+                collection_name=self.SYSTEM_KB_COLLECTION,
+                query_vector=query_embedding.tolist(),
+                limit=top_k
+            )
+            return [
+                {
+                    "text": hit.payload.get("text", ""),
+                    "score": hit.score,
+                    "document_id": hit.payload.get("document_id"),
+                    "filename": hit.payload.get("filename"),
+                    "chunk_id": hit.payload.get("chunk_id"),
+                    "source": "system",
+                }
+                for hit in results
+            ]
+        except Exception as e:
+            raise VectorStoreError(f"Failed to search system KB: {str(e)}")
