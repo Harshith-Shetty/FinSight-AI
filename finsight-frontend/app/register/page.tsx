@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { register as apiRegister, login as apiLogin } from '@/lib/api';
+import { register as apiRegister } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,6 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,15 +35,9 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            // Step 1: Create the account
             await apiRegister(email, password);
-
-            // Step 2: Auto-login to get the JWT token
-            const tokenResponse = await apiLogin(email, password);
-            login(tokenResponse.access_token, { id: '', email });
-
-            toast.success('Account created successfully!');
-            router.push('/chat');
+            toast.success('Account created! Check your email for the verification code.');
+            router.push(`/verify-email?email=${encodeURIComponent(email)}`);
         } catch (error: any) {
             toast.error(error.message || 'Registration failed');
         } finally {

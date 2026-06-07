@@ -65,11 +65,43 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class RegisterResponse(BaseModel):
+    """Response after user registration."""
+    email: str
+    email_verification_required: bool = True
+    message: str
+
+
+class VerifyEmailRequest(BaseModel):
+    """Email verification request."""
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+
+
+class ResendOTPRequest(BaseModel):
+    """Resend OTP request."""
+    email: EmailStr
+    purpose: str = Field("email_verification", description="OTP purpose: email_verification or password_reset")
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Forgot password request."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Reset password request."""
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+
 class UserResponse(BaseModel):
     """User info response."""
     id: UUID
     email: str
     role: UserRoleEnum
+    is_verified: bool = True
     created_at: datetime
     last_login: Optional[datetime] = None
     
