@@ -89,6 +89,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     api_key_hash  = Column(String(255), nullable=True)
     role          = Column(SafeUserRole, default=UserRole.NORMAL, nullable=False)
+    is_verified   = Column(Boolean, default=False, nullable=False)
     created_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_login    = Column(DateTime, nullable=True)
     
@@ -97,6 +98,7 @@ class User(Base):
     documents     = relationship("Document",     back_populates="user", cascade="all, delete-orphan")
     chats         = relationship("Chat",         back_populates="user", cascade="all, delete-orphan")
     token_usages  = relationship("TokenUsage",   back_populates="user", cascade="all, delete-orphan")
+    otp_tokens    = relationship("OTPToken",     back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
@@ -224,3 +226,33 @@ class TokenUsage(Base):
 
     def __repr__(self):
         return f"<TokenUsage(user_id={self.user_id}, month={self.month}, tokens={self.tokens_used})>"
+
+
+class OTPPurpose(enum.Enum):
+    """OTP purpose enum."""
+    EMAIL_VERIFICATION = "email_verification"
+    PASSWORD_RESET = "password_reset"
+
+
+class OTPToken(Base):
+    """OTP token model for email verification and password reset."""
+    __tablename__ = "otp_tokens"
+    
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    otp_hash   = Column(String(255), nullable=False)
+    purpose    = Column(Enum(OTPPurpose), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_used    = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="otp_tokens")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_otp_user_purpose', 'user_id', 'purpose'),
+    )
+    
+    def __repr__(self):
+        return f"<OTPToken(id={self.id}, user_id={self.user_id}, purpose={self.purpose})>"

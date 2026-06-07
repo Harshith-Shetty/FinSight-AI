@@ -47,6 +47,17 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     API_KEY_HASH_ALGORITHM: str = "HS256"
     
+    # Postmark Email Configuration (SMTP)
+    POSTMARK_SMTP_HOST: str = "smtp.postmarkapp.com"
+    POSTMARK_SMTP_PORT: int = 587
+    POSTMARK_SERVER_TOKEN: Optional[str] = None
+    POSTMARK_FROM_EMAIL: str = "FinSight AI <noreply@harshithshetty.dev>"
+    POSTMARK_MESSAGE_STREAM: str = "finsightai"
+    
+    # OTP Settings
+    OTP_EXPIRY_MINUTES: int = 10
+    OTP_RESEND_COOLDOWN_SECONDS: int = 60
+    
     # Logging
     LOG_LEVEL: str = "INFO"
     

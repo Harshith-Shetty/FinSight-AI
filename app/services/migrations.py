@@ -60,6 +60,34 @@ async def run_migrations():
             except Exception:
                 pass
 
+            # Add is_verified column to users table (default True for existing users)
+            try:
+                await conn.execute(text("""
+                    ALTER TABLE users 
+                    ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE NOT NULL;
+                """))
+                # New users will default to False in the ORM model,
+                # but existing users get True via the DB default above.
+                # After migration, change the DB default to False for future rows.
+                await conn.execute(text("""
+                    ALTER TABLE users ALTER COLUMN is_verified SET DEFAULT FALSE;
+                """))
+                print("  - Added is_verified column to users")
+            except Exception:
+                pass
+
+            # Create OTP purpose enum type if not exists
+            try:
+                await conn.execute(text("""
+                    DO $$ BEGIN
+                        CREATE TYPE otppurpose AS ENUM ('email_verification', 'password_reset');
+                    EXCEPTION
+                        WHEN duplicate_object THEN null;
+                    END $$;
+                """))
+            except Exception:
+                pass
+
         print("Database migrations completed successfully")
         
     except Exception as e:

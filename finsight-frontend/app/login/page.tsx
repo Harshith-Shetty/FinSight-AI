@@ -35,7 +35,14 @@ export default function LoginPage() {
             toast.success('Login successful!');
             router.push('/chat');
         } catch (error: any) {
-            toast.error(error.message || 'Login failed');
+            const msg = error.message || 'Login failed';
+            // If user hasn't verified their email, redirect to verification page
+            if (msg.toLowerCase().includes('verify your email')) {
+                toast.info('Please verify your email first.');
+                router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+            } else {
+                toast.error(msg);
+            }
         } finally {
             setLoading(false);
         }
@@ -99,6 +106,12 @@ export default function LoginPage() {
                         <Button type="submit" className="w-full" disabled={loading}>
                             {loading ? 'Signing in...' : 'Sign In'}
                         </Button>
+                        <Link
+                            href="/forgot-password"
+                            className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                            Forgot your password?
+                        </Link>
                         <p className="text-sm text-center text-gray-600 dark:text-gray-400">
                             Don't have an account?{' '}
                             <Link href="/register" className="text-blue-600 hover:underline">
