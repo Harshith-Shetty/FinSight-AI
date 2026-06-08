@@ -19,7 +19,7 @@ const FOCUS_AREAS = [
 ];
 
 export default function TickerAnalysisPage() {
-    const { isAuthenticated, loading, token } = useAuth();
+    const { isAuthenticated, loading, token, isPremium } = useAuth();
     const router = useRouter();
 
     const [ticker, setTicker] = useState('');
@@ -42,8 +42,11 @@ export default function TickerAnalysisPage() {
     useEffect(() => {
         if (!loading && !isAuthenticated) {
             router.push('/login');
+        } else if (!loading && isAuthenticated && !isPremium) {
+            router.push('/chat');
+            toast.error('Deep Ticker Analysis is a premium feature. Please upgrade your plan.');
         }
-    }, [isAuthenticated, loading, router]);
+    }, [isAuthenticated, loading, isPremium, router]);
 
     // Handle Polling Clean Up
     useEffect(() => {

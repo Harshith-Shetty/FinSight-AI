@@ -33,7 +33,7 @@ export function ChatSidebar({
     onNewChat,
     onDeleteChat,
 }: ChatSidebarProps) {
-    const { logout, token, isAdmin } = useAuth();
+    const { logout, token, isAdmin, isPremium } = useAuth();
     const router = useRouter();
     const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
 
@@ -97,11 +97,26 @@ export function ChatSidebar({
                 </Button>
                 <Button
                     variant="ghost"
-                    className="w-full justify-start mt-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                    onClick={() => router.push('/analyze')}
+                    className={`w-full justify-start mt-2 ${
+                        isPremium 
+                            ? 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20' 
+                            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                    }`}
+                    onClick={() => {
+                        if (isPremium) {
+                            router.push('/analyze');
+                        } else {
+                            toast.error('Deep Ticker Analysis is a premium feature. Please upgrade your plan.');
+                        }
+                    }}
                 >
                     <TrendingUp className="mr-2 h-4 w-4" />
                     Deep Ticker Analysis
+                    {!isPremium && (
+                        <span className="ml-auto text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                            Premium
+                        </span>
+                    )}
                 </Button>
                 {isAdmin && (
                     <Button

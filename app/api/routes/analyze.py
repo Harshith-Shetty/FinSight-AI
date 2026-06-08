@@ -8,11 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import uuid4
 
 from app.models.schemas import AnalysisRequest, TaskResponse, TaskStatusEnum
-from app.models.database import AnalysisTask, TaskStatus
+from app.models.database import AnalysisTask, TaskStatus, User, UserRole
 from app.core.database import get_db
 
-from app.core.permissions import check_token_quota
-from app.models.database import User
+from app.core.permissions import check_token_quota, require_role
 
 router = APIRouter()
 
@@ -20,9 +19,11 @@ router = APIRouter()
 @router.post("/analyze", response_model=TaskResponse, status_code=status.HTTP_202_ACCEPTED)
 async def submit_analysis(
     request: AnalysisRequest,
-    current_user: User = Depends(check_token_quota),
+    current_user: User = Depends(require_role(UserRole.PREMIUM, UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db)
 ):
+    # Also verify token quota limits
+    await check_token_quota(current_user, db)
     """
     Submit a financial analysis request.
     
