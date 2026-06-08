@@ -353,3 +353,25 @@ async def get_current_user_tokens(
     return quota
 
 
+@router.post("/resend-welcome", status_code=status.HTTP_200_OK)
+async def resend_welcome(
+    data: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Resend the welcome email to a user (can be used from Swagger).
+    """
+    result = await db.execute(
+        select(User).where(User.email == data.email)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+        
+    await send_welcome_email(user.email)
+    
+    return {"message": "Welcome email sent successfully."}

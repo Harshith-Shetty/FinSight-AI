@@ -99,6 +99,7 @@ class User(Base):
     chats         = relationship("Chat",         back_populates="user", cascade="all, delete-orphan")
     token_usages  = relationship("TokenUsage",   back_populates="user", cascade="all, delete-orphan")
     otp_tokens    = relationship("OTPToken",     back_populates="user", cascade="all, delete-orphan")
+    plan_upgrade_requests = relationship("PlanUpgradeRequest", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
@@ -256,3 +257,33 @@ class OTPToken(Base):
     
     def __repr__(self):
         return f"<OTPToken(id={self.id}, user_id={self.user_id}, purpose={self.purpose})>"
+
+
+class UpgradeRequestStatus(enum.Enum):
+    """Status enum for plan upgrade requests."""
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class PlanUpgradeRequest(Base):
+    """Model for user plan upgrade requests."""
+    __tablename__ = "plan_upgrade_requests"
+    
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reason     = Column(Text, nullable=False)
+    status     = Column(Enum(UpgradeRequestStatus), default=UpgradeRequestStatus.PENDING, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="plan_upgrade_requests")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_upgrade_request_status', 'status'),
+    )
+    
+    def __repr__(self):
+        return f"<PlanUpgradeRequest(id={self.id}, user_id={self.user_id}, status={self.status})>"

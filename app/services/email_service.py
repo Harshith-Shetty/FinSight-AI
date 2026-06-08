@@ -21,6 +21,8 @@ from app.services.email_templates import (
     verification_otp_email,
     password_reset_otp_email,
     welcome_email,
+    upgrade_request_admin_email,
+    upgrade_approved_email,
 )
 
 
@@ -248,6 +250,42 @@ async def send_welcome_email(user_email: str) -> bool:
     return await _send_email_via_postmark(
         to_email=user_email,
         subject="Welcome to FinSight AI! 🎉",
+        html_body=html,
+        text_body=text,
+    )
+
+
+async def send_plan_upgrade_request_email(user_email: str, reason: str, request_id: str) -> bool:
+    """Send plan upgrade request to developer."""
+    admin_email = "developer.finSightAI@harshithshetty.dev"
+    html, text = upgrade_request_admin_email(user_email, reason, request_id)
+    return await _send_email_via_postmark(
+        to_email=admin_email,
+        subject=f"New Plan Upgrade Request from {user_email}",
+        html_body=html,
+        text_body=text,
+    )
+
+
+async def send_plan_upgrade_approved_email(user_email: str, admin_email: str, plan: str) -> bool:
+    """Send plan upgrade approval email to user, and notify developer."""
+    # Notify developer
+    dev_email = "developer.finSightAI@harshithshetty.dev"
+    from app.services.email_templates import dev_upgrade_approved_email
+    dev_html, dev_text = dev_upgrade_approved_email(user_email, admin_email, plan)
+    
+    await _send_email_via_postmark(
+        to_email=dev_email,
+        subject=f"Upgrade Approved: {user_email}",
+        html_body=dev_html,
+        text_body=dev_text,
+    )
+    
+    # Send actual approval email to user
+    html, text = upgrade_approved_email(user_email)
+    return await _send_email_via_postmark(
+        to_email=user_email,
+        subject="Your FinSight AI Premium upgrade is approved!",
         html_body=html,
         text_body=text,
     )
