@@ -5,7 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Loader2, Users, FileText, Database, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function SystemStats() {
+interface SystemStatsProps {
+    refreshKey?: number;
+}
+
+export function SystemStats({ refreshKey = 0 }: SystemStatsProps) {
     const { token } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -16,7 +20,7 @@ export function SystemStats() {
             .then(setStats)
             .catch(() => toast.error('Failed to load system stats'))
             .finally(() => setLoading(false));
-    }, [token]);
+    }, [token, refreshKey]);
 
     if (loading) {
         return (
@@ -35,10 +39,10 @@ export function SystemStats() {
                 <h3 className="text-2xl font-bold">{stats.total_users}</h3>
                 <p className="text-sm text-gray-500">Total Users</p>
                 <div className="text-xs text-gray-400 mt-2 flex gap-2">
-                    <span>A: {stats.users_by_role?.ADMIN || 0}</span>
-                    <span>P: {stats.users_by_role?.PREMIUM || 0}</span>
-                    <span>N: {stats.users_by_role?.NORMAL || 0}</span>
-                    <span>G: {stats.users_by_role?.GUEST || 0}</span>
+                    <span>A: {stats.users_by_role?.admin || 0}</span>
+                    <span>P: {stats.users_by_role?.premium || 0}</span>
+                    <span>N: {stats.users_by_role?.normal || 0}</span>
+                    <span>G: {stats.users_by_role?.guest || 0}</span>
                 </div>
             </Card>
 

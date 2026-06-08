@@ -86,6 +86,30 @@ async def update_user_role(
     )
 
 
+@router.post("/users/{user_id}/reset-tokens", response_model=dict)
+async def reset_user_tokens(
+    user_id: UUID,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset a user's tokens to 0 for the current month. Admin only."""
+    month = _current_month()
+    usage_result = await db.execute(
+        select(TokenUsage).where(
+            TokenUsage.user_id == user_id, 
+            TokenUsage.month == month
+        )
+    )
+    usage = usage_result.scalar_one_or_none()
+    
+    if usage:
+        usage.tokens_used = 0
+        await db.commit()
+        
+    return {"message": "Tokens reset successfully", "tokens_used_this_month": 0}
+
+
+
 @router.get("/stats")
 async def system_stats(
     current_user: User = Depends(require_role(UserRole.ADMIN)),

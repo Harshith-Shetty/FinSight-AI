@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SystemStats } from '@/components/admin/SystemStats';
@@ -12,6 +12,11 @@ import { UpgradeRequestsTable } from '@/components/admin/UpgradeRequestsTable';
 export default function AdminDashboardPage() {
     const { isAuthenticated, loading, isAdmin } = useAuth();
     const router = useRouter();
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const handleApprove = () => {
+        setRefreshKey(prev => prev + 1);
+    };
 
     // Protect the route: Only Admins allowed
     useEffect(() => {
@@ -45,17 +50,17 @@ export default function AdminDashboardPage() {
                 <div className="space-y-12">
                     <section>
                         <h2 className="text-2xl font-semibold mb-6">System Statistics</h2>
-                        <SystemStats />
+                        <SystemStats refreshKey={refreshKey} />
                     </section>
 
                     <section>
                         <h2 className="text-2xl font-semibold mb-6">User Management</h2>
-                        <UserTable />
+                        <UserTable refreshKey={refreshKey} />
                     </section>
 
                     <section>
                         <h2 className="text-2xl font-semibold mb-6">Pending Plan Upgrades</h2>
-                        <UpgradeRequestsTable />
+                        <UpgradeRequestsTable onApprove={handleApprove} />
                     </section>
                 </div>
             </div>
