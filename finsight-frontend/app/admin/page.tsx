@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SystemStats } from '@/components/admin/SystemStats';
 import { UserTable } from '@/components/admin/UserTable';
+import { UpgradeRequestsTable } from '@/components/admin/UpgradeRequestsTable';
 
 export default function AdminDashboardPage() {
     const { isAuthenticated, loading, isAdmin } = useAuth();
@@ -50,6 +51,11 @@ export default function AdminDashboardPage() {
                     <section>
                         <h2 className="text-2xl font-semibold mb-6">User Management</h2>
                         <UserTable />
+                    </section>
+
+                    <section>
+                        <h2 className="text-2xl font-semibold mb-6">Pending Plan Upgrades</h2>
+                        <UpgradeRequestsTable />
                     </section>
                 </div>
             </div>

@@ -43,7 +43,7 @@ def _base_template(content: str, preview_text: str = "") -> str:
                     <tr>
                         <td align="center" style="padding-bottom: 32px;">
                             <h1 style="margin: 0 0 6px; font-size: 26px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.5px;">
-                                FinSight <span style="background: linear-gradient(135deg, #818cf8, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #818cf8;">AI</span>
+                                FinSight AI
                             </h1>
                             <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">
                                 AI-Powered Financial Intelligence
@@ -340,9 +340,9 @@ def welcome_email(user_email: str, app_url: str = "http://localhost:3000") -> tu
                                             </div>
                                         </td>
                                         <td>
-                                            <p style="margin: 0 0 2px; color: #e2e8f0; font-size: 14px; font-weight: 600;">Risk Analysis</p>
+                                            <p style="margin: 0 0 2px; color: #e2e8f0; font-size: 14px; font-weight: 600;">Risk Analysis <span style="color: #fbbf24; font-size: 11px; font-weight: bold; background-color: rgba(251, 191, 36, 0.15); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">PREMIUM</span></p>
                                             <p style="margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.4;">
-                                                Automated sentiment scoring and risk factor identification
+                                                Automated sentiment scoring and risk factor identification (Requires Premium)
                                             </p>
                                         </td>
                                     </tr>
@@ -379,7 +379,7 @@ Your email has been verified and your account is all set.
 Here's what you can do:
 - AI Chat: Ask questions about financial documents
 - Document Analysis: Upload PDFs for instant insights
-- Risk Analysis: Automated sentiment scoring
+- Risk Analysis: Automated sentiment scoring (Premium Feature)
 
 Get started: {app_url}/chat
 
@@ -391,3 +391,174 @@ Portfolio: https://harshithshetty.dev | GitHub: https://github.harshithshetty.de
 """
     
     return html, plaintext
+
+
+def upgrade_request_admin_email(user_email: str, reason: str, request_id: str, app_url: str = "http://localhost:3000") -> tuple[str, str]:
+    """
+    Generate email sent to admin when a user requests an upgrade.
+    
+    Returns:
+        Tuple of (html_content, plaintext_content)
+    """
+    content = f"""
+        <h2 style="margin: 0 0 8px; color: #f1f5f9; font-size: 22px; font-weight: 700;">
+            New Plan Upgrade Request
+        </h2>
+        <p style="margin: 0 0 24px; color: #94a3b8; font-size: 15px; line-height: 1.6;">
+            A user has requested to upgrade to the Premium plan.
+        </p>
+        
+        <!-- Info Box -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+            <tr>
+                <td style="background-color: #16163a; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 24px;">
+                    <p style="margin: 0 0 8px; color: #94a3b8; font-size: 13px;"><strong>User Email:</strong> <span style="color: #e2e8f0;">{user_email}</span></p>
+                    <p style="margin: 0 0 8px; color: #94a3b8; font-size: 13px;"><strong>Reason:</strong></p>
+                    <div style="background-color: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; color: #e2e8f0; font-style: italic;">
+                        "{reason}"
+                    </div>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- CTA Button -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+            <tr>
+                <td align="center">
+                    <a href="{app_url}/admin" style="display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 10px; letter-spacing: 0.3px;">
+                        Review Request in Admin Dashboard &rarr;
+                    </a>
+                </td>
+            </tr>
+        </table>
+    """
+    
+    html = _base_template(content, f"New plan upgrade request from {user_email}")
+    
+    plaintext = f"""FinSight AI — New Plan Upgrade Request
+
+User: {user_email}
+Reason: {reason}
+
+Review this request in the Admin Dashboard: {app_url}/admin
+
+---
+Developed by Harshith Shetty
+Portfolio: https://harshithshetty.dev | GitHub: https://github.harshithshetty.dev | LinkedIn: https://linkedin.harshithshetty.dev
+"""
+    
+    return html, plaintext
+
+
+def upgrade_approved_email(user_email: str, app_url: str = "http://localhost:3000") -> tuple[str, str]:
+    """
+    Generate email sent to user when their upgrade request is approved.
+    
+    Returns:
+        Tuple of (html_content, plaintext_content)
+    """
+    content = f"""
+        <h2 style="margin: 0 0 8px; color: #f1f5f9; font-size: 22px; font-weight: 700;">
+            Your Upgrade is Approved! &#x1F389;
+        </h2>
+        <p style="margin: 0 0 24px; color: #94a3b8; font-size: 15px; line-height: 1.6;">
+            Good news! Your request to upgrade to the Premium plan has been approved.
+        </p>
+        
+        <!-- Features -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+            <tr>
+                <td style="background-color: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 20px;">
+                    <p style="margin: 0 0 12px; color: #e2e8f0; font-weight: 600;">You now have access to:</p>
+                    <ul style="margin: 0; padding-left: 20px; color: #94a3b8; line-height: 1.6;">
+                        <li style="margin-bottom: 6px;">Deep Ticker Analysis</li>
+                        <li style="margin-bottom: 6px;">Significantly higher token limits</li>
+                        <li>Priority processing</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- CTA Button -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+            <tr>
+                <td align="center">
+                    <a href="{app_url}/analyze" style="display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; border-radius: 10px; letter-spacing: 0.3px;">
+                        Try Deep Analysis Now &rarr;
+                    </a>
+                </td>
+            </tr>
+        </table>
+    """
+    
+    html = _base_template(content, "Your FinSight AI Premium upgrade has been approved!")
+    
+    plaintext = f"""FinSight AI — Upgrade Approved!
+
+Good news! Your request to upgrade to the Premium plan has been approved.
+
+You now have access to:
+- Deep Ticker Analysis
+- Significantly higher token limits
+- Priority processing
+
+Try it now: {app_url}/analyze
+
+---
+Developed by Harshith Shetty
+Portfolio: https://harshithshetty.dev | GitHub: https://github.harshithshetty.dev | LinkedIn: https://linkedin.harshithshetty.dev
+"""
+    return html, plaintext
+
+
+def dev_upgrade_approved_email(user_email: str, admin_email: str, plan: str, app_url: str = "http://localhost:3000") -> tuple[str, str]:
+    """
+    Generate email sent to developer when an upgrade is approved.
+    
+    Returns:
+        Tuple of (html_content, plaintext_content)
+    """
+    content = f"""
+        <h2 style="margin: 0 0 8px; color: #f1f5f9; font-size: 22px; font-weight: 700;">
+            Upgrade Approved
+        </h2>
+        <p style="margin: 0 0 24px; color: #94a3b8; font-size: 15px; line-height: 1.6;">
+            {plan} Upgrade request for {user_email} was approved by {admin_email}.
+        </p>
+        
+        <!-- Info Box -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+            <tr>
+                <td style="background-color: #16163a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 24px;">
+                    <p style="margin: 0 0 8px; color: #94a3b8; font-size: 13px;">
+                        <strong>User Email:</strong> <span style="color: #e2e8f0;">{user_email}</span>
+                    </p>
+                    <p style="margin: 0 0 8px; color: #94a3b8; font-size: 13px;">
+                        <strong>Approved By:</strong> <span style="color: #e2e8f0;">{admin_email}</span>
+                    </p>
+                    <p style="margin: 0 0 8px; color: #94a3b8; font-size: 13px;">
+                        <strong>Plan:</strong> <span style="color: #e2e8f0;">{plan}</span>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        
+        <p style="margin: 0; color: #10b981; font-weight: 600; font-size: 14px;">
+            {plan} Welcome email sent.
+        </p>
+    """
+    
+    html = _base_template(content, f"Upgrade approved for {user_email}")
+    
+    plaintext = f"""FinSight AI — Upgrade Approved
+
+{plan} Upgrade request for {user_email} was approved by {admin_email}. 
+{plan} Welcome email sent.
+
+---
+Developed by Harshith Shetty
+Portfolio: https://harshithshetty.dev | GitHub: https://github.harshithshetty.dev | LinkedIn: https://linkedin.harshithshetty.dev
+"""
+    
+    return html, plaintext
+

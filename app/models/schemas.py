@@ -45,6 +45,13 @@ class UserRoleEnum(str, Enum):
     GUEST   = "guest"
 
 
+class UpgradeRequestStatusEnum(str, Enum):
+    """Status enum for plan upgrade requests."""
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
 # ============ Authentication Schemas ============
 
 class UserRegister(BaseModel):
@@ -136,6 +143,23 @@ class UserAdminResponse(BaseModel):
 class UpdateUserRoleRequest(BaseModel):
     """Request to change a user's role."""
     role: UserRoleEnum
+
+
+class PlanUpgradeRequestCreate(BaseModel):
+    """Request to upgrade user plan."""
+    reason: str = Field(..., min_length=10, description="Reason for requesting plan upgrade")
+
+
+class PlanUpgradeRequestResponse(BaseModel):
+    """Response for plan upgrade requests."""
+    id: UUID
+    user_id: UUID
+    reason: str
+    status: UpgradeRequestStatusEnum
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 # ============ Document Schemas ============

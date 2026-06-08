@@ -13,7 +13,8 @@ import {
     Trash2,
     LogOut,
     FileText,
-    TrendingUp
+    TrendingUp,
+    User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -128,6 +129,14 @@ export function ChatSidebar({
                         Admin Dashboard
                     </Button>
                 )}
+                <Button
+                    variant="ghost"
+                    className="w-full justify-start mt-2"
+                    onClick={() => router.push('/profile')}
+                >
+                    <User className="mr-2 h-4 w-4" />
+                    My Profile
+                </Button>
             </div>
 
             {/* Chat List */}

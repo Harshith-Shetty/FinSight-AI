@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.api.routes import analyze, tasks, auth, documents, chats, messages, public_documents, admin
+from app.api.routes import analyze, tasks, auth, documents, chats, messages, public_documents, admin, users
 
 
 @asynccontextmanager
@@ -65,6 +65,7 @@ app.include_router(analyze.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(tasks.router, prefix="/api/v1", tags=["Tasks"])
 app.include_router(public_documents.router)  # /api/v1/public-documents
 app.include_router(admin.router)             # /api/v1/admin
+app.include_router(users.router)             # /api/v1/users
 
 
 
