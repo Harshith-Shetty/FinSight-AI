@@ -16,7 +16,11 @@ import { toast } from 'sonner';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
-export function UpgradeRequestsTable() {
+interface UpgradeRequestsTableProps {
+    onApprove?: () => void;
+}
+
+export function UpgradeRequestsTable({ onApprove }: UpgradeRequestsTableProps) {
     const { token } = useAuth();
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +49,7 @@ export function UpgradeRequestsTable() {
             await approveUpgradeRequest(id, token!);
             toast.success('Upgrade request approved');
             fetchRequests();
+            if (onApprove) onApprove();
         } catch (error: any) {
             toast.error(error.message || 'Failed to approve request');
         } finally {
