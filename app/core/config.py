@@ -45,7 +45,12 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str
+    ALGORITHM: str = "HS256"
     API_KEY_HASH_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200
+    
+    # Frontend URL (used in emails and CORS)
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # Postmark Email Configuration (SMTP)
     POSTMARK_SMTP_HOST: str = "smtp.postmarkapp.com"
