@@ -4,6 +4,7 @@ Supports environment-based configuration for easy provider switching.
 """
 
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Optional
 
 
@@ -65,6 +66,34 @@ class Settings(BaseSettings):
     
     # Logging
     LOG_LEVEL: str = "INFO"
+    
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def clean_database_url(cls, v: str) -> str:
+        if not v or not isinstance(v, str):
+            return v
+        
+        # 1. Convert postgres:// or postgresql:// to postgresql+asyncpg:// for SQLAlchemy
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        # 2. Convert sslmode=... to ssl=true for asyncpg compatibility
+        from urllib.parse import urlparse, parse_qs, urlunparse, urlencode
+        parsed = urlparse(v)
+        query = parse_qs(parsed.query)
+        
+        if "sslmode" in query:
+            val = query.pop("sslmode")[0]
+            if val != "disable":
+                query["ssl"] = ["true"]
+            else:
+                query["ssl"] = ["false"]
+                
+        new_query = urlencode(query, doseq=True)
+        new_parsed = parsed._replace(query=new_query)
+        return urlunparse(new_parsed)
     
     class Config:
         env_file = ".env"
