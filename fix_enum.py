@@ -9,7 +9,8 @@ async def fix_chatmode_enum():
     """Fix the chatmode enum to use lowercase values."""
     
     # Connect to database
-    conn = await asyncpg.connect(settings.DATABASE_URL)
+    db_url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+    conn = await asyncpg.connect(db_url)
     
     try:
         print("Fixing chatmode enum...")
