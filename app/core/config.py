@@ -87,9 +87,9 @@ class Settings(BaseSettings):
         if "sslmode" in query:
             val = query.pop("sslmode")[0]
             if val != "disable":
-                query["ssl"] = ["true"]
+                query["ssl"] = ["require"]
             else:
-                query["ssl"] = ["false"]
+                query["ssl"] = ["disable"]
                 
         new_query = urlencode(query, doseq=True)
         new_parsed = parsed._replace(query=new_query)
