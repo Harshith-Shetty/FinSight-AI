@@ -3,6 +3,7 @@ Application configuration using Pydantic Settings.
 Supports environment-based configuration for easy provider switching.
 """
 
+# pyrefly: ignore [missing-import]
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import Optional
@@ -87,9 +88,9 @@ class Settings(BaseSettings):
         if "sslmode" in query:
             val = query.pop("sslmode")[0]
             if val != "disable":
-                query["ssl"] = ["require"]
+                query["ssl"] = ["true"]
             else:
-                query["ssl"] = ["disable"]
+                query["ssl"] = ["false"]
                 
         new_query = urlencode(query, doseq=True)
         new_parsed = parsed._replace(query=new_query)
