@@ -1,4 +1,4 @@
-import { AuthResponse, Chat, ChatCreate, ChatHistoryResponse, Document, DocumentUploadResponse, Message, MessageCreate, SSEChunk, TokenUsage, PublicDocument, UserAdminResponse, UserRole } from '@/types';
+import { AuthResponse, Chat, ChatCreate, Document, DocumentUploadResponse, Message, SSEChunk, TokenUsage, PublicDocument, UserAdminResponse, UserRole } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -179,27 +179,6 @@ export async function getChatMessages(chatId: string, token: string): Promise<Me
         headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to fetch messages');
-    return res.json();
-}
-
-export async function sendMessage(
-    chatId: string,
-    data: MessageCreate,
-    token: string
-): Promise<ChatHistoryResponse> {
-    const res = await apiFetch(`${API_URL}/api/v1/chats/${chatId}/messages`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-
-    if (!res.ok) {
-        throw new Error('Failed to send message');
-    }
-
     return res.json();
 }
 
@@ -438,21 +417,5 @@ export async function approveUpgradeRequest(requestId: string, token: string): P
         headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to approve request');
-    return res.json();
-}
-
-export async function resendWelcomeEmail(email: string, token: string): Promise<any> {
-    const res = await apiFetch(`${API_URL}/api/v1/auth/resend-welcome`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-    });
-    if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        throw new Error(error.detail || 'Failed to resend welcome email');
-    }
     return res.json();
 }
