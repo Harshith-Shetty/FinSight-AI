@@ -87,15 +87,6 @@ export interface ChatCreate {
     title?: string;
 }
 
-export interface MessageCreate {
-    content: string;
-}
-
-export interface ChatHistoryResponse {
-    chat_id: string;
-    messages: Message[];
-}
-
 export interface SSEChunk {
     type: 'user_message' | 'chunk' | 'sources' | 'done';
     content?: string;

@@ -11,7 +11,6 @@ from uuid import UUID
 from app.models.schemas import TaskStatusResponse, TaskStatusEnum
 from app.models.database import AnalysisTask
 from app.core.database import get_db
-from app.core.exceptions import TaskNotFoundError
 
 router = APIRouter()
 
