@@ -201,7 +201,7 @@ export default function TickerAnalysisPage() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Focus Focus Area</label>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Focus Area</label>
                                 <select
                                     value={focusArea}
                                     onChange={(e) => setFocusArea(e.target.value)}
