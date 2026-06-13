@@ -25,25 +25,25 @@ class GroqProvider(LLMProvider):
         self.client = AsyncGroq(api_key=self.api_key)
     
     async def generate(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         context: Optional[str] = None,
         temperature: float = 0.3,
         max_tokens: int = 1000,
         json_mode: bool = False
-    ) -> str:
+    ) -> tuple[str, int]:
         """
         Generate response using Groq API.
-        
+
         Args:
             prompt: User prompt or question
             context: Optional context (for analysis tasks)
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             json_mode: Whether to use JSON response format
-        
+
         Returns:
-            Generated text response
+            Tuple of (generated text response, total tokens used)
         """
         if context:
             # Analysis mode - structured JSON output
@@ -53,7 +53,7 @@ class GroqProvider(LLMProvider):
             # Chat mode - simple prompt
             messages = [{"role": "user", "content": prompt}]
             response_format = None
-        
+
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -61,11 +61,9 @@ class GroqProvider(LLMProvider):
             max_tokens=max_tokens,
             response_format=response_format
         )
-        
+
         tokens_used = response.usage.total_tokens if response.usage else 0
-        # To record token usage here we'd need to emit an event or track it
-        # but for now, conform to the interface by returning only the content string
-        return response.choices[0].message.content
+        return response.choices[0].message.content, tokens_used
     
     async def stream(
         self,

@@ -6,6 +6,8 @@ from sentence_transformers import SentenceTransformer
 from typing import List
 import numpy as np
 
+from app.services.chunking import chunk_text_semantic
+
 
 class EmbeddingGenerator:
     """
@@ -35,16 +37,7 @@ class EmbeddingGenerator:
         Returns:
             List of text chunks
         """
-        # Simple word-based chunking (in production, use proper tokenization)
-        words = text.split()
-        chunks = []
-        
-        for i in range(0, len(words), chunk_size - overlap):
-            chunk = " ".join(words[i:i + chunk_size])
-            if chunk.strip():
-                chunks.append(chunk)
-        
-        return chunks
+        return chunk_text_semantic(text, chunk_size=chunk_size, overlap=overlap)
     
     async def generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """

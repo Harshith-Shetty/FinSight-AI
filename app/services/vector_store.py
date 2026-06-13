@@ -200,20 +200,24 @@ class QdrantVectorStore:
         ticker: str,
         year: int,
         chunks: List[str],
-        embeddings: Any  # numpy array
+        embeddings: Any,  # numpy array
+        sections: List[str] = None
     ):
         """
         Store document chunks and their embeddings in Qdrant.
-        
+
         Args:
             ticker: Stock ticker symbol
             year: Filing year
             chunks: List of text chunks
             embeddings: Numpy array of embeddings
+            sections: Optional list of section names (e.g. "Item 1A. Risk Factors"),
+                      one per chunk. Defaults to "general" if not provided.
         """
         try:
             points = []
             for idx, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                section = sections[idx] if sections else "general"
                 point = PointStruct(
                     id=str(uuid.uuid4()),
                     vector=embedding.tolist(),
@@ -222,7 +226,7 @@ class QdrantVectorStore:
                         "year": year,
                         "chunk_id": idx,
                         "text": chunk,
-                        "section": "general"  # Could be enhanced to detect sections
+                        "section": section
                     }
                 )
                 points.append(point)
@@ -367,3 +371,44 @@ class QdrantVectorStore:
             ]
         except Exception as e:
             raise VectorStoreError(f"Failed to search system KB: {str(e)}")
+
+    async def scroll_all_texts(self, collection_name: str) -> List[Dict[str, Any]]:
+        """
+        Fetch all chunk texts and metadata from a collection for BM25 indexing.
+
+        Args:
+            collection_name: Name of the Qdrant collection to scroll
+
+        Returns:
+            List of {"text", "document_id", "filename", "chunk_id"} dicts
+        """
+        try:
+            collections = self.client.get_collections().collections
+            collection_names = [c.name for c in collections]
+            if collection_name not in collection_names:
+                return []
+
+            results = []
+            offset = None
+            while True:
+                points, offset = self.client.scroll(
+                    collection_name=collection_name,
+                    limit=256,
+                    offset=offset,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+                for point in points:
+                    payload = point.payload or {}
+                    results.append({
+                        "text": payload.get("text", ""),
+                        "document_id": payload.get("document_id"),
+                        "filename": payload.get("filename"),
+                        "chunk_id": payload.get("chunk_id"),
+                    })
+                if offset is None:
+                    break
+
+            return results
+        except Exception as e:
+            raise VectorStoreError(f"Failed to scroll collection: {str(e)}")

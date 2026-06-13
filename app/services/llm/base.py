@@ -17,23 +17,23 @@ class LLMProvider(ABC):
     
     @abstractmethod
     async def generate(
-        self, 
-        prompt: str, 
+        self,
+        prompt: str,
         context: Optional[str] = None,
         temperature: float = 0.3,
         max_tokens: int = 1000
-    ) -> str:
+    ) -> tuple[str, int]:
         """
         Generate LLM response given prompt and context.
-        
+
         Args:
             prompt: User query or instruction
             context: Retrieved context from RAG
             temperature: Sampling temperature (0-1)
             max_tokens: Maximum response length
-            
+
         Returns:
-            Generated text response (JSON formatted)
+            Tuple of (generated text response, total tokens used)
         """
         pass
     
