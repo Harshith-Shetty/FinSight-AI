@@ -142,7 +142,7 @@ class ChatService:
 Return ONLY the title, nothing else."""
         
         try:
-            title = await self.llm_provider.generate(prompt)
+            title, _ = await self.llm_provider.generate(prompt)
             # Clean and truncate
             title = title.strip().strip('"').strip("'")
             return title[:50]
