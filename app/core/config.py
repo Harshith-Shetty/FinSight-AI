@@ -3,8 +3,6 @@ Application configuration using Pydantic Settings.
 Supports environment-based configuration for easy provider switching.
 """
 
-# pyrefly: ignore [missing-import]
-from alembic import env
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import Optional

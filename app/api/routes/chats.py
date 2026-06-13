@@ -4,7 +4,7 @@ Chat management API endpoints.
 
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -43,7 +43,7 @@ async def create_chat(
 async def list_chats(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    limit: int = 50
+    limit: int = Query(50, ge=1, le=200)
 ):
     """
     Get all chats for the current user.
