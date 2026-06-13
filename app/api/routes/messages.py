@@ -43,7 +43,11 @@ async def send_message(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat not found"
         )
-    
+
+    # Fetch recent history before saving the new message (for query rewriting)
+    recent_messages = await chat_service.get_chat_messages(db, chat_id, current_user.id)
+    history = [{"role": m.role.value, "content": m.content} for m in recent_messages[-4:]]
+
     # Save user message
     user_message = Message(
         chat_id=chat_id,
@@ -53,12 +57,13 @@ async def send_message(
     db.add(user_message)
     await db.commit()
     await db.refresh(user_message)
-    
+
     # Generate AI response using RAG
     response = await rag_service.generate_response(
         user_id=current_user.id,
         query=message_data.content,
-        mode=chat.mode
+        mode=chat.mode,
+        history=history
     )
     
     # Save AI message
@@ -118,7 +123,11 @@ async def send_message_stream(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat not found"
         )
-    
+
+    # Fetch recent history before saving the new message (for query rewriting)
+    recent_messages = await chat_service.get_chat_messages(db, chat_id, current_user.id)
+    history = [{"role": m.role.value, "content": m.content} for m in recent_messages[-4:]]
+
     # Save user message
     user_message = Message(
         chat_id=chat_id,
@@ -128,21 +137,22 @@ async def send_message_stream(
     db.add(user_message)
     await db.commit()
     await db.refresh(user_message)
-    
+
     async def event_generator():
         """Generate Server-Sent Events."""
         # Send user message ID
         yield f"data: {json.dumps({'type': 'user_message', 'message_id': str(user_message.id)})}\n\n"
-        
+
         # Collect full response for saving
         full_response = ""
         sources = []
-        
+
         # Stream AI response
         async for chunk in rag_service.generate_response_stream(
             user_id=current_user.id,
             query=message_data.content,
-            mode=chat.mode
+            mode=chat.mode,
+            history=history
         ):
             if chunk["type"] == "chunk":
                 full_response += chunk["content"]

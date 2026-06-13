@@ -2,10 +2,12 @@
 Document processing service for parsing PDF, TXT, and DOCX files.
 """
 
-from typing import List
+from typing import Dict, List
 import os
 from PyPDF2 import PdfReader
 from docx import Document
+
+from app.services.chunking import chunk_text_semantic, chunk_text_with_sections
 
 
 class DocumentProcessor:
@@ -112,19 +114,20 @@ class DocumentProcessor:
         Returns:
             List of text chunks
         """
-        # Simple word-based chunking (approximation)
-        words = text.split()
-        chunks = []
+        return chunk_text_semantic(text, chunk_size=chunk_size, overlap=overlap)
 
-        # Guard against a non-positive stride (overlap >= chunk_size) causing an infinite loop
-        step = max(1, chunk_size - overlap)
+    @staticmethod
+    def chunk_with_sections(text: str, chunk_size: int = 500, overlap: int = 50) -> List[Dict[str, str]]:
+        """
+        Split text into overlapping chunks, tagging each chunk with the SEC
+        filing section ("Item 1A. Risk Factors", etc.) it was extracted from.
 
-        i = 0
-        while i < len(words):
-            chunk_words = words[i:i + chunk_size]
-            chunk = ' '.join(chunk_words).strip()
-            if chunk:
-                chunks.append(chunk)
-            i += step
+        Args:
+            text: Text to chunk
+            chunk_size: Target chunk size in words (approximate)
+            overlap: Number of words to overlap between chunks
 
-        return chunks
+        Returns:
+            List of {"text": chunk_text, "section": section_name} dicts
+        """
+        return chunk_text_with_sections(text, chunk_size=chunk_size, overlap=overlap)

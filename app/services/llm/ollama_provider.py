@@ -6,6 +6,7 @@ Used for production deployment on AWS EC2 - self-hosted, private, cost-effective
 import httpx
 from app.services.llm.base import LLMProvider
 from app.core.config import Settings
+from typing import Optional
 import json
 
 
@@ -23,21 +24,25 @@ class OllamaProvider(LLMProvider):
         self.client = httpx.AsyncClient(timeout=120.0)  # Longer timeout for self-hosted
     
     async def generate(
-        self, 
-        prompt: str, 
-        context: str,
+        self,
+        prompt: str,
+        context: Optional[str] = None,
         temperature: float = 0.3,
         max_tokens: int = 1000
-    ) -> str:
-        """Generate response using Ollama API."""
-        payload = self._build_payload(prompt, context, temperature, max_tokens)
-        
+    ) -> tuple[str, int]:
+        """Generate response using Ollama API.
+
+        Returns:
+            Tuple of (generated text response, estimated tokens used)
+        """
+        payload = self._build_payload(prompt, context or "", temperature, max_tokens)
+
         response = await self.client.post(
             f"{self.base_url}/api/generate",
             json=payload
         )
         response.raise_for_status()
-        
+
         # Ollama streams responses, concatenate them
         full_response = ""
         for line in response.text.split("\n"):
@@ -47,8 +52,10 @@ class OllamaProvider(LLMProvider):
                     full_response += chunk.get("response", "")
                 except json.JSONDecodeError:
                     continue
-        
-        return full_response
+
+        # Ollama doesn't return token usage in this payload — estimate (~4 chars/token)
+        tokens_used = int((len(prompt) + len(full_response)) * 0.25)
+        return full_response, tokens_used
     
     def _build_payload(self, prompt: str, context: str, temperature: float, max_tokens: int) -> dict:
         """Build request payload for Ollama API."""

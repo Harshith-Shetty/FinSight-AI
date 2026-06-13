@@ -66,6 +66,13 @@ class Settings(BaseSettings):
     
     # Logging
     LOG_LEVEL: str = "INFO"
+
+    # RAG Pipeline Tuning
+    RAG_MIN_RETRIEVAL_K: int = 20       # minimum candidates fetched before reranking
+    RAG_MIN_RERANK_SCORE: float = -1.0  # cross-encoder logit threshold below which a chunk is dropped
+    RAG_MIN_CONTEXT_CHUNKS: int = 1     # if fewer chunks pass the threshold, treat as "no context"
+    RAG_QUERY_REWRITE_ENABLED: bool = True
+    RAG_QUERY_REWRITE_MIN_HISTORY: int = 1  # min prior messages before rewriting kicks in
     
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

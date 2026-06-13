@@ -7,6 +7,7 @@ from typing import Dict, Any
 import json
 
 from app.services.data_ingestion import SECDataFetcher
+from app.services.document_processor import DocumentProcessor
 from app.services.embeddings import EmbeddingGenerator
 from app.services.vector_store import QdrantVectorStore
 from app.services.llm.factory import get_llm_provider
@@ -44,18 +45,21 @@ class RAGPipeline:
         # Step 1: Fetch SEC filing
         filing_text = await self.data_fetcher.fetch_10k(ticker, filing_year)
         
-        # Step 2: Chunk document
-        chunks = self.embedding_generator.chunk_text(filing_text)
-        
+        # Step 2: Chunk document (section-aware for SEC filings)
+        chunked = DocumentProcessor.chunk_with_sections(filing_text)
+        chunks = [c["text"] for c in chunked]
+        sections = [c["section"] for c in chunked]
+
         # Step 3: Generate embeddings
         embeddings = await self.embedding_generator.generate_embeddings(chunks)
-        
+
         # Step 4: Store in Qdrant
         await self.vector_store.upsert_vectors(
             ticker=ticker,
             year=filing_year,
             chunks=chunks,
-            embeddings=embeddings
+            embeddings=embeddings,
+            sections=sections
         )
         
         # Step 5: Create query based on focus area
@@ -76,7 +80,7 @@ class RAGPipeline:
         context = self._build_context(relevant_chunks)
         
         # Step 9: Generate LLM response
-        llm_response = await self.llm_provider.generate(
+        llm_response, _ = await self.llm_provider.generate(
             prompt=query,
             context=context,
             temperature=0.3,
