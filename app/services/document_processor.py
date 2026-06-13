@@ -115,11 +115,16 @@ class DocumentProcessor:
         # Simple word-based chunking (approximation)
         words = text.split()
         chunks = []
-        
+
+        # Guard against a non-positive stride (overlap >= chunk_size) causing an infinite loop
+        step = max(1, chunk_size - overlap)
+
         i = 0
         while i < len(words):
             chunk_words = words[i:i + chunk_size]
-            chunks.append(' '.join(chunk_words))
-            i += chunk_size - overlap
-        
+            chunk = ' '.join(chunk_words).strip()
+            if chunk:
+                chunks.append(chunk)
+            i += step
+
         return chunks

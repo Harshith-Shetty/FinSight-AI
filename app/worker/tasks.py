@@ -52,8 +52,7 @@ def process_financial_analysis(
         filing_year: SEC filing year
     """
     # Run async code in sync context
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
+    return asyncio.run(
         _process_analysis_async(task_id, ticker, focus_area, filing_year)
     )
 
@@ -132,8 +131,7 @@ def process_document_task(
     If is_public=True, stores vectors in system_knowledge_base collection.
     Otherwise stores in the per-user collection.
     """
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
+    return asyncio.run(
         _process_document_async(document_id, user_id, file_path, file_type, filename, is_public)
     )
 
@@ -165,7 +163,12 @@ async def _process_document_async(
             
             # Chunk text
             chunks = processor.chunk_text(text)
-            
+
+            # A document with no extractable text yields no chunks — fail loudly
+            # instead of marking it COMPLETED with zero searchable vectors.
+            if not chunks:
+                raise ValueError("No extractable text found in document")
+
             # Generate embeddings
             from app.services.embeddings import EmbeddingGenerator
             embedding_gen = EmbeddingGenerator()

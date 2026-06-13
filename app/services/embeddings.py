@@ -38,12 +38,15 @@ class EmbeddingGenerator:
         # Simple word-based chunking (in production, use proper tokenization)
         words = text.split()
         chunks = []
-        
-        for i in range(0, len(words), chunk_size - overlap):
+
+        # Guard against a non-positive stride (overlap >= chunk_size) raising/ looping
+        step = max(1, chunk_size - overlap)
+
+        for i in range(0, len(words), step):
             chunk = " ".join(words[i:i + chunk_size])
             if chunk.strip():
                 chunks.append(chunk)
-        
+
         return chunks
     
     async def generate_embeddings(self, texts: List[str]) -> np.ndarray:
