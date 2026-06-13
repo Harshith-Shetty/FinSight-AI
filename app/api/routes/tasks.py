@@ -9,8 +9,9 @@ from sqlalchemy import select
 from uuid import UUID
 
 from app.models.schemas import TaskStatusResponse, TaskStatusEnum
-from app.models.database import AnalysisTask
+from app.models.database import AnalysisTask, User
 from app.core.database import get_db
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ router = APIRouter()
 @router.get("/tasks/{task_id}", response_model=TaskStatusResponse)
 async def get_task_status(
     task_id: UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -40,8 +42,11 @@ async def get_task_status(
     curl http://localhost:8000/api/v1/tasks/{task_id}
     ```
     """
-    # Query task
-    stmt = select(AnalysisTask).where(AnalysisTask.task_id == task_id)
+    # Query task (scoped to the authenticated user to prevent IDOR)
+    stmt = select(AnalysisTask).where(
+        AnalysisTask.task_id == task_id,
+        AnalysisTask.user_id == current_user.id
+    )
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
     

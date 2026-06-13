@@ -195,8 +195,10 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
         # Build prompt
         prompt = self.build_rag_prompt(query, context, mode)
         
-        # Generate response
-        response_text, tokens_used = await self.llm_provider.generate(prompt)
+        # Generate response (providers return a plain string)
+        response_text = await self.llm_provider.generate(prompt)
+        # Estimate token usage (~4 chars/token), mirroring the streaming path's heuristic
+        tokens_used = (len(prompt) + len(response_text)) // 4
         
         return {
             "text": response_text,
