@@ -7,14 +7,17 @@ import { Chat, Message, SSEChunk } from '@/types';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Menu } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ChatWindowProps {
     chat: Chat;
     onMessageSent?: () => void;  // Called after a message completes — lets parent refresh chat list/title
+    onOpenSidebar?: () => void;
 }
 
-export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
+export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowProps) {
     const { token } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
@@ -115,11 +118,21 @@ export function ChatWindow({ chat, onMessageSent }: ChatWindowProps) {
     return (
         <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold">{chat.title}</h2>
-                <p className="text-sm text-gray-500">
-                    {chat.mode === 'HYBRID' ? '🌐 Hybrid Mode' : '🔒 Private Mode'}
-                </p>
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden -ml-2 flex-shrink-0"
+                    onClick={onOpenSidebar}
+                >
+                    <Menu className="h-5 w-5" />
+                </Button>
+                <div className="min-w-0">
+                    <h2 className="text-lg font-semibold truncate">{chat.title}</h2>
+                    <p className="text-sm text-gray-500">
+                        {chat.mode === 'HYBRID' ? '🌐 Hybrid Mode' : '🔒 Private Mode'}
+                    </p>
+                </div>
             </div>
 
             {/* Messages */}

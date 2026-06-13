@@ -14,7 +14,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
             <div
                 className={`
-          flex gap-3 max-w-[80%]
+          flex gap-3 max-w-[90%] sm:max-w-[80%]
           ${isUser ? 'flex-row-reverse' : 'flex-row'}
         `}
             >
