@@ -21,13 +21,3 @@ class SECAPIError(FinSightException):
 class VectorStoreError(FinSightException):
     """Raised when Qdrant operations fail."""
     pass
-
-
-class DatabaseError(FinSightException):
-    """Raised when database operations fail."""
-    pass
-
-
-class TaskNotFoundError(FinSightException):
-    """Raised when a task is not found in the database."""
-    pass
