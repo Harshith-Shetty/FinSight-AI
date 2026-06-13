@@ -1,245 +1,104 @@
 # FinSight AI
 
-**Asynchronous Financial Intelligence Microservice**
+**FinSight AI** is a full-stack, event-driven financial analysis microservice that leverages Retrieval-Augmented Generation (RAG) to provide deep, contextual insights into financial documents like SEC filings. 
 
-A production-grade, event-driven microservice for financial analysis using Retrieval Augmented Generation (RAG). Built to showcase senior-level software engineering skills including system design, async Python, and cloud architecture.
-
----
-
-## 🎯 Project Highlights
-
-- **Event-Driven Architecture**: Producer-Consumer pattern with Celery + Redis
-- **LLM Provider Abstraction**: Switch between Groq (dev) and AWS Ollama (prod) with ONE config change
-- **Modern Python**: Async/await, SQLAlchemy 2.0, Pydantic V2, type hints
-- **Design Patterns**: Strategy Pattern, Factory Pattern, Repository Pattern
-- **Production-Ready**: Docker Compose, health checks, structured logging
+The application features a modern Next.js frontend and a high-performance FastAPI backend, processing AI inference asynchronously via Celery and Redis to ensure a fast, non-blocking user experience.
 
 ---
 
-## 🏗️ Architecture
+## 🎯 Key Features
 
-```
-Client → FastAPI (202 Accepted) → Redis Queue → Celery Worker → LLM Provider
-                ↓                                      ↓              ↓
-          PostgreSQL (Task Status)              Qdrant (Vectors)   Groq/Ollama
-```
-
-**Key Components:**
-- **FastAPI**: Non-blocking API gateway
-- **PostgreSQL**: Task lifecycle tracking
-- **Redis**: Message broker for async tasks
-- **Qdrant**: Vector database for semantic search
-- **Celery**: Background task processor
-- **LLM Providers**: Groq (development) or Ollama on AWS (production)
+- **Semantic Search**: Upload documents and instantly chat with them using Qdrant vector search and `sentence-transformers` embeddings.
+- **Asynchronous Processing**: Non-blocking API leveraging Celery and Redis for heavy AI and data ingestion workloads.
+- **Provider Agnostic LLM**: Effortlessly switch between Groq API (for fast development) and self-hosted AWS Ollama models using a single environment variable.
+- **Modern Tech Stack**: Built with Next.js 16, React 19, Tailwind CSS v4, FastAPI, SQLAlchemy 2.0 Async, and PostgreSQL.
+- **Automated Deployments**: CI/CD pipelines via GitHub Actions for seamless AWS EC2 deployment.
 
 ---
 
-## 🚀 Quick Start
+## 🔧 Tech Stack
+
+- **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui
+- **Backend**: FastAPI, Python 3.12, Celery
+- **Database**: PostgreSQL (via SQLAlchemy 2.0 asyncpg)
+- **Vector Store**: Qdrant
+- **Message Broker**: Redis
+- **AI/ML**: `sentence-transformers`, Groq / Ollama
+
+---
+
+## 🚀 Quick Start Guide
 
 ### Prerequisites
-- Docker Desktop installed and running
+- Docker & Docker Compose
 - Python 3.11+
-- (Optional) Groq API key from [console.groq.com](https://console.groq.com)
+- Node.js 18+ & npm
+- A Groq API Key (Free from [console.groq.com](https://console.groq.com))
 
-### 1. Clone and Setup
-
+### 1. Setup Environment
+Clone the repository and set up your environment variables:
 ```bash
+git clone https://github.com/Harshith-Shetty/FinSight-AI.git
 cd FinSight-AI
+
+# Create your .env file
 cp .env.example .env
-# Edit .env and add your GROQ_API_KEY
 ```
+Edit `.env` and add your `GROQ_API_KEY`.
 
 ### 2. Start Infrastructure
-
+Run the necessary databases (PostgreSQL, Redis, Qdrant) via Docker:
 ```bash
 docker-compose up -d
 ```
 
-This starts:
-- PostgreSQL on port 5432
-- Redis on port 6379
-- Qdrant on port 6333
-
-### 3. Install Dependencies
-
+### 3. Backend Setup
+Set up the Python virtual environment and install dependencies:
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the API
-
+Start the FastAPI Server (Terminal 1):
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-API will be available at: http://localhost:8000
+Start the Celery Worker (Terminal 2):
+```bash
+# On Mac/Linux:
+celery -A app.worker.celery_app worker --loglevel=info
 
-**Swagger Docs**: http://localhost:8000/docs
+# On Windows:
+celery -A app.worker.celery_app worker --loglevel=info --pool=solo
+```
+
+### 4. Frontend Setup
+Install dependencies and run the Next.js development server (Terminal 3):
+```bash
+cd finsight-frontend
+npm install
+npm run dev
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000). 
+The Backend API Swagger Docs are available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ---
 
-## 📡 API Usage
+## 🔄 Switching LLM Providers
 
-### Submit Analysis Request
+The application uses a Factory Pattern to effortlessly switch LLMs without code changes.
 
-```bash
-curl -X POST http://localhost:8000/api/v1/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "ticker": "AAPL",
-    "focus_area": "risk_factors",
-    "filing_year": 2024
-  }'
-```
-
-**Response:**
-```json
-{
-  "task_id": "a1b2c3d4-...",
-  "status": "PENDING",
-  "message": "Analysis queued successfully..."
-}
-```
-
-### Check Task Status
-
-```bash
-curl http://localhost:8000/api/v1/tasks/{task_id}
-```
-
-**Response (Completed):**
-```json
-{
-  "task_id": "a1b2c3d4-...",
-  "status": "COMPLETED",
-  "result": {
-    "ticker": "AAPL",
-    "summary": "Apple faces supply chain risks...",
-    "key_risks": ["Supply chain disruption", "..."],
-    "sentiment_score": 0.45,
-    "citations": [...]
-  }
-}
-```
-
----
-
-## 🔄 LLM Provider Switching
-
-**This is the magic!** Switch between Groq and Ollama with ONE config change:
-
-### Development (Groq - Fast & Free)
-
+**To use Groq (Development)**:
 ```env
 LLM_PROVIDER=groq
-GROQ_API_KEY=gsk_xxxxx
+GROQ_API_KEY=gsk_your_api_key_here
 ```
 
-### Production (Ollama on AWS)
-
+**To use Ollama (Production/Self-Hosted)**:
 ```env
 LLM_PROVIDER=ollama
-OLLAMA_BASE_URL=http://your-aws-ec2-ip:11434
+OLLAMA_BASE_URL=http://your-ollama-server-ip:11434
 ```
-
-**No code changes required!** The Factory Pattern handles provider selection automatically.
-
----
-
-## 📁 Project Structure
-
-```
-FinSight-AI/
-├── app/
-│   ├── api/routes/          # FastAPI endpoints
-│   ├── core/                # Config, database, exceptions
-│   ├── models/              # SQLAlchemy + Pydantic models
-│   ├── services/
-│   │   └── llm/             # LLM Provider Abstraction ⭐
-│   │       ├── base.py      # Strategy Pattern interface
-│   │       ├── groq_provider.py
-│   │       ├── ollama_provider.py
-│   │       └── factory.py   # Factory Pattern
-│   └── worker/              # Celery tasks
-├── tests/                   # Test suite
-├── docker-compose.yml       # Infrastructure
-└── requirements.txt
-```
-
----
-
-## 🧪 Development Status
-
-### ✅ Completed
-- [x] Project foundation and Docker setup
-- [x] Pydantic Settings configuration
-- [x] SQLAlchemy 2.0 Async ORM models
-- [x] **LLM Provider Abstraction Layer** (Strategy + Factory)
-- [x] FastAPI application with endpoints
-- [x] Pydantic request/response schemas
-
-### 🚧 In Progress
-- [ ] Celery worker implementation
-- [ ] SEC EDGAR data fetcher
-- [ ] RAG pipeline (embeddings + Qdrant)
-- [ ] End-to-end integration
-
-### 📋 Planned
-- [ ] Unit and integration tests
-- [ ] AWS deployment with Terraform
-- [ ] Performance benchmarks (Groq vs Ollama)
-
----
-
-## 🎓 System Design Showcase
-
-This project demonstrates:
-
-1. **High-Level Design**: Event-driven architecture, scalability patterns
-2. **Low-Level Design**: Class diagrams, database schema, API contracts
-3. **Design Patterns**: Strategy, Factory, Repository
-4. **Modern Python**: Async/await, type hints, Pydantic V2
-5. **Cloud Architecture**: AWS deployment strategy with Terraform
-
-See `/docs` folder for detailed design documents.
-
----
-
-## 🔧 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **API** | FastAPI, Uvicorn |
-| **Database** | PostgreSQL (async), Qdrant (vectors) |
-| **Queue** | Celery + Redis |
-| **LLM** | Groq API / Ollama |
-| **Embeddings** | sentence-transformers |
-| **ORM** | SQLAlchemy 2.0 Async |
-| **Validation** | Pydantic V2 |
-| **Deployment** | Docker Compose, Terraform (AWS) |
-
----
-
-## 📊 Resume Talking Points
-
-**For Senior Backend Engineer Roles:**
-> "Architected an event-driven financial analysis microservice using FastAPI and Celery. Implemented LLM provider abstraction with Strategy and Factory patterns, enabling zero-code switching between Groq and self-hosted Ollama on AWS. Designed for 99.9% uptime with async I/O and horizontal scaling."
-
-**For System Design Interviews:**
-> "Used Producer-Consumer pattern to decouple API availability from heavy compute. The API returns 202 Accepted immediately while Celery workers process tasks asynchronously. This ensures sub-100ms API response times even under load."
-
----
-
-## 📝 License
-
-MIT License - feel free to use this project as a portfolio piece!
-
----
-
-## 👤 Author
-
-Built as a portfolio project to demonstrate production-grade software engineering skills.
-
-**Contact**: harshithdshetty@gmail.com
