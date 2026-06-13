@@ -7,7 +7,7 @@ import { Chat } from '@/types';
 import { ChatSidebar } from '@/components/chat/ChatSidebar';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ChatPage() {
@@ -15,6 +15,7 @@ export default function ChatPage() {
     const [chats, setChats] = useState<Chat[]>([]);
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
     const [loading, setLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         loadChats();
@@ -84,17 +85,31 @@ export default function ChatPage() {
                 onSelectChat={setSelectedChat}
                 onNewChat={handleNewChat}
                 onDeleteChat={loadChats}
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
             />
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
                 {selectedChat ? (
-                    <ChatWindow chat={selectedChat} onMessageSent={loadChats} />
+                    <ChatWindow
+                        chat={selectedChat}
+                        onMessageSent={loadChats}
+                        onOpenSidebar={() => setSidebarOpen(true)}
+                    />
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500 px-4 text-center">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="md:hidden absolute top-4 left-4"
+                            onClick={() => setSidebarOpen(true)}
+                        >
+                            <Menu className="h-5 w-5" />
+                        </Button>
                         <h2 className="text-2xl font-semibold mb-4">Welcome to FinSight AI</h2>
                         <p className="mb-6">Select a chat or create a new one to get started</p>
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
                             <Button onClick={() => handleNewChat('HYBRID')}>
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 New Hybrid Chat

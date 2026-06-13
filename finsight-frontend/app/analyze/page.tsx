@@ -141,16 +141,16 @@ export default function TickerAnalysisPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 md:p-12 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 sm:p-6 md:p-12 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <div className="max-w-6xl mx-auto space-y-8">
-                
+
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/chat')} className="hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <Button variant="ghost" size="icon" onClick={() => router.push('/chat')} className="hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
                         <ArrowLeft className="h-6 w-6" />
                     </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">Deep Ticker Analysis</h1>
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-indigo-400">Deep Ticker Analysis</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Deploy RAG and Financial LLM pipelines on raw SEC filings.</p>
                     </div>
                 </div>
@@ -158,7 +158,7 @@ export default function TickerAnalysisPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     
                     {/* Control Panel Card */}
-                    <Card className="lg:col-span-1 p-6 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.15)] rounded-2xl backdrop-blur-md">
+                    <Card className="lg:col-span-1 p-4 sm:p-6 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.15)] rounded-2xl backdrop-blur-md">
                         <h3 className="text-lg font-semibold mb-4 border-b border-gray-100 dark:border-gray-800 pb-2">Analysis Targets</h3>
                         <form onSubmit={handleFormSubmit} className="space-y-5">
                             <div>
@@ -177,7 +177,7 @@ export default function TickerAnalysisPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Filing Year</label>
                                     <select

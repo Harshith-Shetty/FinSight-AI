@@ -14,7 +14,8 @@ import {
     LogOut,
     FileText,
     TrendingUp,
-    User
+    User,
+    X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -25,6 +26,8 @@ interface ChatSidebarProps {
     onSelectChat: (chat: Chat) => void;
     onNewChat: (mode: 'HYBRID' | 'PRIVATE') => void;
     onDeleteChat: () => void;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
 export function ChatSidebar({
@@ -33,6 +36,8 @@ export function ChatSidebar({
     onSelectChat,
     onNewChat,
     onDeleteChat,
+    isOpen = false,
+    onClose,
 }: ChatSidebarProps) {
     const { logout, token, isAdmin, isPremium } = useAuth();
     const router = useRouter();
@@ -64,11 +69,43 @@ export function ChatSidebar({
         router.push('/login');
     };
 
+    const handleSelectChat = (chat: Chat) => {
+        onSelectChat(chat);
+        onClose?.();
+    };
+
     return (
-        <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <>
+            {/* Mobile overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={onClose}
+                />
+            )}
+
+            <div
+                className={`
+                    fixed md:static inset-y-0 left-0 z-50
+                    w-72 sm:w-80 max-w-[85vw]
+                    bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+                    flex flex-col transform transition-transform duration-200 ease-in-out
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                `}
+            >
             {/* Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h1 className="text-xl font-bold mb-4">FinSight AI</h1>
+                <div className="flex items-center justify-between mb-4">
+                    <h1 className="text-xl font-bold">FinSight AI</h1>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="md:hidden"
+                        onClick={onClose}
+                    >
+                        <X className="h-5 w-5" />
+                    </Button>
+                </div>
                 <div className="flex gap-2">
                     <Button
                         onClick={() => onNewChat('HYBRID')}
@@ -150,7 +187,7 @@ export function ChatSidebar({
                         chats.map((chat) => (
                             <div
                                 key={chat.id}
-                                onClick={() => onSelectChat(chat)}
+                                onClick={() => handleSelectChat(chat)}
                                 className={`
                   flex items-center justify-between p-3 mb-2 rounded-lg cursor-pointer
                   transition-colors
@@ -214,6 +251,7 @@ export function ChatSidebar({
                     Logout
                 </Button>
             </div>
-        </div>
+            </div>
+        </>
     );
 }
