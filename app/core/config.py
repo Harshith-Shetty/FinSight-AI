@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str
+    DATABASE_SSL: bool = False
     
     # Redis
     REDIS_URL: str
