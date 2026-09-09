@@ -20,14 +20,9 @@ async def lifespan(app: FastAPI):
     print(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     print(f"LLM Provider: {settings.LLM_PROVIDER.upper()}")
     
-    # Initialize database connection
+    # Verify the connection. Schema migrations must be run with Alembic.
     await init_db()
-    print("Database initialized")
-    
-    # Run migrations automatically
-    from app.services.migrations import run_migrations, verify_database
-    await run_migrations()
-    await verify_database()
+    print("Database connection verified")
     
     yield
     
