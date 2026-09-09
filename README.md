@@ -49,7 +49,7 @@ Edit `.env` and add your `GROQ_API_KEY`.
 ### 2. Start Infrastructure
 Run the necessary databases (PostgreSQL, Redis, Qdrant) via Docker:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Backend Setup
@@ -58,6 +58,9 @@ Set up the Python virtual environment and install dependencies:
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# Apply the database schema before starting the API
+alembic upgrade head
 ```
 
 Start the FastAPI Server (Terminal 1):
@@ -84,6 +87,25 @@ npm run dev
 
 The application will be available at [http://localhost:3000](http://localhost:3000). 
 The Backend API Swagger Docs are available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+### Reset only the local PostgreSQL database
+
+If an older development database has schema drift, remove only the PostgreSQL
+volume and apply the Alembic migrations again. This preserves Redis and Qdrant
+data. First stop and remove the PostgreSQL container, then remove only the
+Compose-managed PostgreSQL volume:
+
+```bash
+docker compose stop postgres
+docker compose rm -f postgres
+docker volume rm finsight-ai_postgres_data
+docker compose up -d postgres
+alembic upgrade head
+```
+
+Local PostgreSQL does not use SSL, so `.env` should contain
+`DATABASE_SSL=false`. Set it to `true` only for a database endpoint that
+requires SSL.
 
 ---
 
