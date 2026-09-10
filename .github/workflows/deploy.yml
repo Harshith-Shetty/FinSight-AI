@@ -4,10 +4,36 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_SHA: ${{ github.sha }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_SSL: ${{ vars.DATABASE_SSL || 'true' }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      QDRANT_URL: ${{ vars.QDRANT_URL }}
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'groq' }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: ${{ vars.GROQ_MODEL || 'llama-3.3-70b-versatile' }}
+      OLLAMA_BASE_URL: ${{ vars.OLLAMA_BASE_URL }}
+      OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL || 'llama3.2:3b' }}
+      FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+      POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
+      POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
+      POSTMARK_MESSAGE_STREAM: ${{ vars.POSTMARK_MESSAGE_STREAM || 'outbound' }}
     steps:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -15,7 +41,39 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
+          envs: DEPLOY_SHA,DATABASE_URL,DATABASE_SSL,REDIS_URL,QDRANT_URL,QDRANT_API_KEY,SECRET_KEY,LLM_PROVIDER,GROQ_API_KEY,GROQ_MODEL,OLLAMA_BASE_URL,OLLAMA_MODEL,FRONTEND_URL,POSTMARK_SERVER_TOKEN,POSTMARK_FROM_EMAIL,POSTMARK_MESSAGE_STREAM
           script: |
+            set -euo pipefail
             cd FinSight-AI
+            git pull --ff-only origin main
+            test "$(git rev-parse HEAD)" = "${DEPLOY_SHA}"
+            umask 077
+            {
+              printf '%s\n' "DATABASE_URL=${DATABASE_URL}"
+              printf '%s\n' "DATABASE_SSL=${DATABASE_SSL}"
+              printf '%s\n' "REDIS_URL=${REDIS_URL}"
+              printf '%s\n' "CELERY_BROKER_URL=${REDIS_URL}"
+              printf '%s\n' "CELERY_RESULT_BACKEND=${REDIS_URL}"
+              printf '%s\n' "QDRANT_URL=${QDRANT_URL}"
+              printf '%s\n' "QDRANT_API_KEY=${QDRANT_API_KEY}"
+              printf '%s\n' "SECRET_KEY=${SECRET_KEY}"
+              printf '%s\n' "ALGORITHM=HS256"
+              printf '%s\n' "API_KEY_HASH_ALGORITHM=HS256"
+              printf '%s\n' "ACCESS_TOKEN_EXPIRE_MINUTES=43200"
+              printf '%s\n' "LLM_PROVIDER=${LLM_PROVIDER}"
+              printf '%s\n' "GROQ_API_KEY=${GROQ_API_KEY}"
+              printf '%s\n' "GROQ_MODEL=${GROQ_MODEL}"
+              printf '%s\n' "OLLAMA_BASE_URL=${OLLAMA_BASE_URL}"
+              printf '%s\n' "OLLAMA_MODEL=${OLLAMA_MODEL}"
+              printf '%s\n' "FRONTEND_URL=${FRONTEND_URL}"
+              printf '%s\n' "POSTMARK_SERVER_TOKEN=${POSTMARK_SERVER_TOKEN}"
+              printf '%s\n' "POSTMARK_FROM_EMAIL=${POSTMARK_FROM_EMAIL}"
+              printf '%s\n' "POSTMARK_MESSAGE_STREAM=${POSTMARK_MESSAGE_STREAM}"
+              printf '%s\n' "DEBUG=false"
+              printf '%s\n' "LOG_LEVEL=INFO"
+            } > .env.next
+            mv .env.next .env
+            chmod 600 .env
             chmod +x deploy.sh
             ./deploy.sh
