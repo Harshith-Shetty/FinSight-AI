@@ -24,7 +24,7 @@ const linkStyle = 'inline-flex min-h-11 items-center justify-center gap-2 rounde
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 selection:bg-blue-100">
+    <div className="min-h-dvh bg-[#f8fafc] font-sans text-slate-900 selection:bg-blue-100">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-white focus:p-4 focus:text-blue-700">Skip to content</a>
       <header className="border-b border-slate-200 bg-white">
         <nav aria-label="Main navigation" className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-8">
@@ -45,7 +45,7 @@ export default function Home() {
         <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1fr_1.05fr] lg:gap-16">
           <div>
             <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium tracking-wide text-blue-700"><Sparkles aria-hidden="true" className="size-3.5" /> FINANCIAL RESEARCH, WITH CONTEXT</p>
-            <h1 className="max-w-xl text-5xl leading-[1.08] font-semibold tracking-[-0.045em] sm:text-6xl">Less searching.<br />More <span className="text-blue-600">understanding.</span></h1>
+            <h1 className="max-w-xl text-4xl min-[400px]:text-5xl leading-[1.08] font-semibold tracking-[-0.045em] sm:text-6xl">Less searching.<br />More <span className="text-blue-600">understanding.</span></h1>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-600">Turn dense financial documents into a conversation. FinSight AI helps you explore reports, ask better questions, and connect answers to the source.</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <LandingActions />
