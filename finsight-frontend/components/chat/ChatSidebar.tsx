@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { deleteChat, getTokens } from '@/lib/api';
 import { Chat, TokenUsage } from '@/types';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import {
     PlusCircle,
@@ -89,12 +88,12 @@ export function ChatSidebar({
                     fixed md:static inset-y-0 left-0 z-50
                     w-72 sm:w-80 max-w-[85vw]
                     bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
-                    flex flex-col transform transition-transform duration-200 ease-in-out
+                    h-dvh min-h-0 shrink-0 overflow-y-auto overscroll-contain flex flex-col transform transition-transform duration-200 ease-in-out
                     ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
                 `}
             >
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-xl font-bold">FinSight AI</h1>
                     <Button
@@ -108,7 +107,7 @@ export function ChatSidebar({
                 </div>
                 <div className="flex gap-2">
                     <Button
-                        onClick={() => onNewChat('HYBRID')}
+                        onClick={() => { onNewChat('HYBRID'); onClose?.(); }}
                         className="flex-1"
                         size="sm"
                     >
@@ -116,7 +115,7 @@ export function ChatSidebar({
                         Hybrid
                     </Button>
                     <Button
-                        onClick={() => onNewChat('PRIVATE')}
+                        onClick={() => { onNewChat('PRIVATE'); onClose?.(); }}
                         variant="outline"
                         className="flex-1"
                         size="sm"
@@ -177,7 +176,7 @@ export function ChatSidebar({
             </div>
 
             {/* Chat List */}
-            <ScrollArea className="flex-1">
+            <div className="min-h-24 flex-1 overflow-y-auto overscroll-contain" aria-label="Chat history" tabIndex={0}>
                 <div className="p-2">
                     {chats.length === 0 ? (
                         <div className="text-center text-gray-500 py-8">
@@ -188,6 +187,8 @@ export function ChatSidebar({
                             <div
                                 key={chat.id}
                                 onClick={() => handleSelectChat(chat)}
+                                role="button" tabIndex={0}
+                                onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleSelectChat(chat); } }}
                                 className={`
                   flex items-center justify-between p-3 mb-2 rounded-lg cursor-pointer
                   transition-colors
@@ -209,6 +210,7 @@ export function ChatSidebar({
                                 <Button
                                     variant="ghost"
                                     size="sm"
+                                    aria-label={`Delete chat: ${chat.title}`}
                                     onClick={(e) => handleDelete(chat.id, e)}
                                     className="ml-2 flex-shrink-0"
                                 >
@@ -218,10 +220,10 @@ export function ChatSidebar({
                         ))
                     )}
                 </div>
-            </ScrollArea>
+            </div>
 
             {/* Footer with Quota */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-4">
+            <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-4">
                 {tokenUsage && !isAdmin && (
                     <div className="flex flex-col gap-2">
                         <div className="flex justify-between text-xs text-gray-500">

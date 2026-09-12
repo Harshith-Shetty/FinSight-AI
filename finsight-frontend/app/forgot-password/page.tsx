@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-center justify-center min-h-dvh bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
             <Card className="w-full max-w-md">
                 {/* ─── Step 1: Enter Email ─────────────────────────────────── */}
                 {step === 'email' && (
@@ -226,7 +226,7 @@ export default function ForgotPasswordPage() {
                                             onChange={(e) => handleOtpChange(index, e.target.value)}
                                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
                                             disabled={loading}
-                                            className="w-11 h-13 sm:w-13 sm:h-15 text-center text-xl sm:text-2xl font-bold rounded-xl
+                                            className="min-w-0 w-full max-w-11 h-12 sm:max-w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl
                                                 border-2 border-gray-200 dark:border-gray-700
                                                 bg-white dark:bg-gray-800
                                                 text-gray-900 dark:text-white

@@ -31,9 +31,7 @@ export default function ChatPage() {
             // Sync selectedChat to reflect title updates
             if (selectedChat) {
                 const updated = data.find(c => c.id === selectedChat.id);
-                if (updated) {
-                    setSelectedChat(updated);
-                }
+                setSelectedChat(updated ?? data[0] ?? null);
             } else if (data.length > 0) {
                 setSelectedChat(data[0]);
             }
@@ -70,14 +68,14 @@ export default function ChatPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center h-dvh">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <div className="flex h-dvh overflow-hidden bg-gray-50 dark:bg-gray-900">
             {/* Sidebar */}
             <ChatSidebar
                 chats={chats}
@@ -90,9 +88,10 @@ export default function ChatPage() {
             />
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 {selectedChat ? (
                     <ChatWindow
+                        key={selectedChat.id}
                         chat={selectedChat}
                         onMessageSent={loadChats}
                         onOpenSidebar={() => setSidebarOpen(true)}

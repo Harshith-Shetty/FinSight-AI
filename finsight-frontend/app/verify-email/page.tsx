@@ -140,7 +140,7 @@ function VerifyEmailContent() {
 
     if (!email) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+            <div className="flex items-center justify-center min-h-dvh bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
                 <Card className="w-full max-w-md">
                     <CardContent className="pt-6 text-center">
                         <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -156,7 +156,7 @@ function VerifyEmailContent() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="flex items-center justify-center min-h-dvh bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-3 text-center">
                     <div className="mx-auto w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -182,7 +182,7 @@ function VerifyEmailContent() {
                                 onChange={(e) => handleChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
                                 disabled={loading}
-                                className="w-11 h-13 sm:w-13 sm:h-15 text-center text-xl sm:text-2xl font-bold rounded-xl
+                                className="min-w-0 w-full max-w-11 h-12 sm:max-w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl
                                     border-2 border-gray-200 dark:border-gray-700
                                     bg-white dark:bg-gray-800
                                     text-gray-900 dark:text-white
@@ -244,7 +244,7 @@ function VerifyEmailContent() {
 export default function VerifyEmailPage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+            <div className="flex items-center justify-center min-h-dvh bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
                 <div className="text-gray-500">Loading...</div>
             </div>
         }>

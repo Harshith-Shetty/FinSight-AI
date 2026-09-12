@@ -31,14 +31,14 @@ export default function AdminDashboardPage() {
 
     if (loading || !isAdmin) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center h-dvh">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+        <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
             <div className="max-w-6xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4 mb-8">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/chat')}>

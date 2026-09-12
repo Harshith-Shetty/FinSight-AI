@@ -31,11 +31,13 @@ export interface Message {
 }
 
 export interface Source {
+    citation_id?: number;
+    filename?: string;
     text: string;
     score: number;
     source: 'user' | 'system';
     document_id?: string;
-    metadata?: any;
+    metadata?: { filename?: string; chunk_id?: string | number; [key: string]: unknown };
 }
 
 export interface Document {
@@ -88,7 +90,8 @@ export interface ChatCreate {
 }
 
 export interface SSEChunk {
-    type: 'user_message' | 'chunk' | 'sources' | 'done';
+    type: 'user_message' | 'chunk' | 'sources' | 'done' | 'error';
+    error?: string;
     content?: string;
     message_id?: string;
     sources?: Source[];
