@@ -10,15 +10,15 @@ export default function ChatLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, loading } = useAuth();
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!loading && !isAuthenticated) {
             router.push('/login');
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, loading, router]);
 
-    if (!isAuthenticated) {
+    if (loading || !isAuthenticated) {
         return null;
     }
 

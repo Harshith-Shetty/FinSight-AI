@@ -6,7 +6,6 @@ import { getChatMessages, streamMessage } from '@/lib/api';
 import { Chat, Message, SSEChunk } from '@/types';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,6 +23,8 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
     const [streaming, setStreaming] = useState(false);
     const [streamingContent, setStreamingContent] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
+    const followLatest = useRef(true);
+    const [showLatest, setShowLatest] = useState(false);
 
     useEffect(() => {
         loadMessages();
@@ -31,7 +32,7 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
 
     useEffect(() => {
         // Auto-scroll to bottom
-        if (scrollRef.current) {
+        if (scrollRef.current && followLatest.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages, streamingContent]);
@@ -52,6 +53,8 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
     const handleSendMessage = async (content: string) => {
         if (!token || !content.trim()) return;
 
+        followLatest.current = true;
+        setShowLatest(false);
         // Add user message immediately
         const userMessage: Message = {
             id: 'temp-' + Date.now(),
@@ -116,13 +119,14 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
     }
 
     return (
-        <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
+        <div className="relative flex-1 min-h-0 min-w-0 flex flex-col bg-white dark:bg-gray-800">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+            <div className="shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
                 <Button
                     variant="ghost"
                     size="icon"
                     className="md:hidden -ml-2 flex-shrink-0"
+                    aria-label="Open chat sidebar"
                     onClick={onOpenSidebar}
                 >
                     <Menu className="h-5 w-5" />
@@ -136,7 +140,13 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6" ref={scrollRef}
+                tabIndex={0} role="region" aria-label="Conversation"
+                onScroll={(event) => {
+                    const el = event.currentTarget;
+                    followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+                    setShowLatest(!followLatest.current);
+                }}>
                 <div className="space-y-4 max-w-4xl mx-auto">
                     {messages.map((message) => (
                         <MessageBubble key={message.id} message={message} />
@@ -161,10 +171,11 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
                         </div>
                     )}
                 </div>
-            </ScrollArea>
+            </div>
+            {showLatest && <Button variant="outline" className="absolute bottom-28 left-1/2 -translate-x-1/2 shadow-md" onClick={() => { followLatest.current = true; setShowLatest(false); scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' }); }}>Jump to latest</Button>}
 
             {/* Input */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="shrink-0 p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-gray-200 dark:border-gray-700">
                 <MessageInput onSend={handleSendMessage} disabled={streaming} />
             </div>
         </div>
