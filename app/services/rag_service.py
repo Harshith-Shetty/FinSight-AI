@@ -12,6 +12,7 @@ from app.services.bm25_index import BM25Index
 from app.services.llm.groq_provider import GroqProvider
 from app.models.database import ChatMode
 from app.core.config import settings
+from app.services.citations import build_citations
 
 
 SYSTEM_KB_COLLECTION = "system_knowledge_base"
@@ -276,8 +277,8 @@ Note: {no_context_note} Provide a general answer based on your knowledge, and ma
 
         # Build context section
         context_text = "\n\n".join([
-            f"[Source {i+1} - {chunk['source']}]: {chunk['text']}"
-            for i, chunk in enumerate(context)
+            f"[Source {chunk['citation_id']} - {chunk['filename']} - {chunk['source']}]: {chunk['text']}"
+            for chunk in build_citations(context)
         ])
 
         mode_instruction = ""
@@ -296,7 +297,11 @@ CONTEXT:
 QUESTION:
 {query}
 
-ANSWER (be concise, accurate, and cite sources when possible):"""
+Use numbered citations [1], [2], etc. immediately after document-supported claims.
+Numbers must match the Source numbers above. Never invent sources or page numbers.
+Clearly distinguish general knowledge from document-supported statements.
+
+ANSWER (be concise and accurate):"""
 
         return prompt
 
@@ -340,7 +345,7 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
 
         return {
             "text": response_text,
-            "sources": context,
+            "sources": build_citations(context),
             "mode": mode.value,
             "tokens_used": tokens_used + rewrite_tokens,
             "search_query": search_query,
@@ -381,6 +386,9 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
         # Build prompt (uses the original query, not the rewritten search query)
         prompt = self.build_rag_prompt(query, context, mode)
 
+        # Send stable references first so citations work while text streams.
+        yield {"type": "sources", "sources": build_citations(context)}
+
         # Stream response from LLM — last yielded item is __TOKENS__:N sentinel
         total_tokens = 0
         async for chunk in self.llm_provider.stream(prompt):
@@ -394,12 +402,6 @@ ANSWER (be concise, accurate, and cite sources when possible):"""
                 "type": "chunk",
                 "content": chunk
             }
-
-        # Send sources at the end
-        yield {
-            "type": "sources",
-            "sources": context
-        }
 
         yield {
             "type": "done",
