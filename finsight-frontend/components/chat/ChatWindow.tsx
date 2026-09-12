@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getChatMessages, streamMessage } from '@/lib/api';
-import { Chat, Message, SSEChunk } from '@/types';
+import { Chat, Message, SSEChunk, Source } from '@/types';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
     const [loading, setLoading] = useState(true);
     const [streaming, setStreaming] = useState(false);
     const [streamingContent, setStreamingContent] = useState('');
+    const [streamingSources, setStreamingSources] = useState<Source[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
     const followLatest = useRef(true);
     const [showLatest, setShowLatest] = useState(false);
@@ -65,6 +66,7 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
 
         setMessages((prev) => [...prev, userMessage]);
         setStreaming(true);
+        setStreamingSources([]);
         setStreamingContent('');
 
         try {
@@ -73,11 +75,13 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
             let assistantMessageId = '';
 
             for await (const chunk of streamMessage(chat.id, content, token)) {
+                if (chunk.type === 'error') throw new Error(chunk.error || 'The answer could not be completed. Please try again.');
                 if (chunk.type === 'chunk' && chunk.content) {
                     fullResponse += chunk.content;
                     setStreamingContent(fullResponse);
                 } else if (chunk.type === 'sources') {
                     sources = chunk.sources;
+                    setStreamingSources(chunk.sources ?? []);
                 } else if (chunk.type === 'done') {
                     assistantMessageId = chunk.message_id ?? 'assistant-' + Date.now();
                 }
@@ -159,6 +163,7 @@ export function ChatWindow({ chat, onMessageSent, onOpenSidebar }: ChatWindowPro
                                 id: 'streaming',
                                 role: 'assistant',
                                 content: streamingContent,
+                                metadata: { sources: streamingSources, mode: chat.mode },
                                 created_at: new Date().toISOString(),
                             }}
                         />
