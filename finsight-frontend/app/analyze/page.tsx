@@ -57,7 +57,7 @@ export default function TickerAnalysisPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="flex items-center justify-center h-dvh bg-gray-50 dark:bg-gray-900">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
@@ -141,7 +141,7 @@ export default function TickerAnalysisPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 sm:p-6 md:p-12 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+        <div className="min-h-dvh bg-gray-50 dark:bg-gray-950 p-4 sm:p-6 md:p-12 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <div className="max-w-6xl mx-auto space-y-8">
 
                 {/* Header */}
@@ -230,7 +230,7 @@ export default function TickerAnalysisPage() {
                     </Card>
 
                     {/* Results / Progress Console */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="min-w-0 lg:col-span-2 space-y-6 [overflow-wrap:anywhere]">
                         
                         {/* Submitting & Progress State */}
                         {submitting && (

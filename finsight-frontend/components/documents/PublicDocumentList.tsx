@@ -91,8 +91,8 @@ export function PublicDocumentList() {
                         <TableBody>
                             {documents.map((doc) => (
                                 <TableRow key={doc.id}>
-                                    <TableCell className="font-medium flex items-center">
-                                        <FileText className="h-4 w-4 mr-2 text-purple-500" />
+                                    <TableCell className="max-w-64 whitespace-normal break-words font-medium [overflow-wrap:anywhere]">
+                                        <FileText className="inline h-4 w-4 mr-2 text-purple-500" />
                                         {doc.filename}
                                     </TableCell>
                                     <TableCell>
