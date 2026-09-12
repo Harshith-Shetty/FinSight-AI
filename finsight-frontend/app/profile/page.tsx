@@ -59,7 +59,7 @@ export default function ProfilePage() {
 
     if (loading || fetching) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="flex items-center justify-center h-dvh bg-gray-50 dark:bg-gray-900">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
@@ -71,7 +71,7 @@ export default function ProfilePage() {
     const isPending = profileData.has_pending_upgrade_request;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+        <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4 mb-8">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/chat')}>
@@ -94,7 +94,7 @@ export default function ProfilePage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Email Address</label>
-                                <div className="font-medium bg-gray-100 dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700">
+                                <div className="break-words [overflow-wrap:anywhere] font-medium bg-gray-100 dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700">
                                     {profileData.user.email}
                                 </div>
                             </div>
@@ -102,13 +102,13 @@ export default function ProfilePage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Current Plan</label>
-                                    <div className="flex items-center gap-2 font-medium bg-gray-100 dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700 capitalize">
+                                    <div className="flex items-center gap-2 break-words [overflow-wrap:anywhere] font-medium bg-gray-100 dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700 capitalize">
                                         {profileData.user.role.toLowerCase()}
                                     </div>
                                 </div>
                                 <div>
                                     <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Tokens Used (This Month)</label>
-                                    <div className="font-medium bg-gray-100 dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700">
+                                    <div className="break-words [overflow-wrap:anywhere] font-medium bg-gray-100 dark:bg-gray-800 p-3 rounded-md border border-gray-200 dark:border-gray-700">
                                         {profileData.tokens_used_this_month}
                                     </div>
                                 </div>
@@ -173,7 +173,7 @@ export default function ProfilePage() {
             {/* Upgrade Request Modal */}
             {showUpgradeModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <Card className="w-full max-w-md p-6 shadow-2xl relative">
+                    <Card className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto p-6 shadow-2xl relative">
                         <div className="flex items-start gap-4 mb-6">
                             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full">
                                 <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />

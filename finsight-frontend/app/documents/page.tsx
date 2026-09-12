@@ -26,7 +26,7 @@ export default function DocumentsPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="flex items-center justify-center h-dvh">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
         );
@@ -52,7 +52,7 @@ export default function DocumentsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
+        <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
             <div className="max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/chat')}>
@@ -61,15 +61,15 @@ export default function DocumentsPage() {
                     <h1 className="text-3xl font-bold">Knowledge Base</h1>
                 </div>
 
-                <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+                <div className="flex gap-2 overflow-x-auto border-b border-gray-200 dark:border-gray-700 pb-2">
                     <button 
-                        className={`text-lg font-medium px-4 py-2 ${activeTab === 'private' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+                        className={`shrink-0 text-sm sm:text-base font-medium px-3 py-2 ${activeTab === 'private' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
                         onClick={() => setActiveTab('private')}
                     >
                         My Documents
                     </button>
                     <button 
-                        className={`text-lg font-medium px-4 py-2 ${activeTab === 'public' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+                        className={`shrink-0 text-sm sm:text-base font-medium px-3 py-2 ${activeTab === 'public' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
                         onClick={() => setActiveTab('public')}
                     >
                         System Knowledge Base
@@ -96,7 +96,7 @@ export default function DocumentsPage() {
 
                 {activeTab === 'public' && (
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                             <p className="text-gray-500 dark:text-gray-400 max-w-2xl">
                                 Documents in the System Knowledge Base are available to all users across the platform when using "Hybrid" mode.
                             </p>
