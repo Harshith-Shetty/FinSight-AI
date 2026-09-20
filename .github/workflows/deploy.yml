@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: vars.DEPLOYMENT_PROVIDER != 'azure'
     runs-on: ubuntu-latest
     environment: production
     env:
