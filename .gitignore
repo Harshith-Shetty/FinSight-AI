@@ -71,3 +71,7 @@ test_document.txt
 test_upload.ps1
 
 scripts/ingest_system_kb.py
+
+# Generated release secrets
+deploy/app.env
+deploy/release.env

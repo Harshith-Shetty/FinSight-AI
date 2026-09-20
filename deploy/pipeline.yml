@@ -1,0 +1,152 @@
+parameters:
+  - name: serviceName
+    type: string
+    values: [api, worker]
+  - name: dockerHubRepository
+    type: string
+    default: YOUR_DOCKERHUB_USER/finsight-api
+  - name: dockerHubServiceConnection
+    type: string
+    default: finsight-dockerhub
+  - name: ec2SshServiceConnection
+    type: string
+    default: finsight-ec2
+
+stages:
+  - stage: Build
+    displayName: Test, build and publish ${{ parameters.serviceName }} image
+    jobs:
+      - job: Image
+        timeoutInMinutes: 60
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.12'
+          - bash: |
+              set -euo pipefail
+              python -m unittest tests.test_citations tests.test_release_config -v
+              bash -n deploy/release.sh
+              python -c 'import os,re; assert re.fullmatch(r"[a-z0-9][a-z0-9_-]*/[a-z0-9][a-z0-9_.-]*", os.environ["REPOSITORY"]), "Set dockerHubRepository to your Docker Hub namespace/repository"'
+            displayName: Validate sources and release configuration
+            env:
+              REPOSITORY: ${{ parameters.dockerHubRepository }}
+          - task: Docker@2
+            displayName: Build image once
+            inputs:
+              command: build
+              containerRegistry: ${{ parameters.dockerHubServiceConnection }}
+              repository: ${{ parameters.dockerHubRepository }}
+              Dockerfile: Dockerfile
+              buildContext: .
+              tags: $(Build.BuildId)
+          - bash: |
+              set -euo pipefail
+              docker run --rm --entrypoint python "$IMAGE" -c 'import pathlib; assert not pathlib.Path("/app/.env").exists(); assert not pathlib.Path("/app/.git").exists(); import app.services.citations'
+            displayName: Verify image excludes local credentials
+            env:
+              IMAGE: docker.io/${{ parameters.dockerHubRepository }}:$(Build.BuildId)
+          - task: Docker@2
+            displayName: Publish tested image
+            inputs:
+              command: push
+              containerRegistry: ${{ parameters.dockerHubServiceConnection }}
+              repository: ${{ parameters.dockerHubRepository }}
+              tags: $(Build.BuildId)
+          - bash: |
+              set -euo pipefail
+              mkdir -p "$RELEASE"
+              docker pull "$IMAGE"
+              docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE" > "$RELEASE/image.txt"
+              cp deploy/compose-${{ parameters.serviceName }}.yml "$RELEASE/compose.yml"
+              cp deploy/release.sh deploy/render_env.py "$RELEASE/"
+            displayName: Package immutable release artifact
+            env:
+              IMAGE: docker.io/${{ parameters.dockerHubRepository }}:$(Build.BuildId)
+              RELEASE: $(Build.ArtifactStagingDirectory)/release
+          - publish: $(Build.ArtifactStagingDirectory)/release
+            artifact: release
+
+  - stage: Deploy
+    displayName: Release ${{ parameters.serviceName }} to EC2
+    dependsOn: Build
+    variables:
+      - group: finsight-production
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['AZURE_DEPLOY_ENABLED'], 'true'))
+    lockBehavior: sequential
+    jobs:
+      - deployment: Production
+        timeoutInMinutes: 60
+        pool:
+          vmImage: ubuntu-latest
+        environment: finsight-production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: release
+                - bash: |
+                    set -euo pipefail
+                    python3 "$RELEASE/render_env.py" "$RELEASE/app.env"
+                    python3 - <<'PY'
+                    import os, pathlib, re, shlex
+                    root = pathlib.Path(os.environ["RELEASE"])
+                    image = (root / "image.txt").read_text().strip()
+                    if not re.fullmatch(r"[a-z0-9./_-]+@sha256:[a-f0-9]{64}", image):
+                        raise SystemExit("Release image must be an immutable digest")
+                    values = {"SERVICE_IMAGE": image, "SERVICE": os.environ["SERVICE"], "UPLOADS_VOLUME": os.environ["UPLOADS_VOLUME"], "COMPOSE_PROJECT_NAME": os.environ["COMPOSE_PROJECT_NAME"]}
+                    for key in ("UPLOADS_VOLUME", "COMPOSE_PROJECT_NAME"):
+                        if not re.fullmatch(r"[a-z0-9][a-z0-9_.-]*", values[key]):
+                            raise SystemExit("Set valid existing volume and Compose project names")
+                    path = root / "release.env"
+                    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as output:
+                        output.write("".join(f"{key}={shlex.quote(value)}\n" for key, value in values.items()))
+                    PY
+                  displayName: Render runtime settings from Azure secret
+                  env:
+                    RELEASE: $(Pipeline.Workspace)/release
+                    SERVICE: ${{ parameters.serviceName }}
+                    PRODUCTION_ENV_JSON: $(PRODUCTION_ENV_JSON)
+                    UPLOADS_VOLUME: $(UPLOADS_VOLUME)
+                    COMPOSE_PROJECT_NAME: $(COMPOSE_PROJECT_NAME)
+                - task: SSH@0
+                  displayName: Prepare private release directory
+                  inputs:
+                    sshEndpoint: ${{ parameters.ec2SshServiceConnection }}
+                    runOptions: inline
+                    inline: |
+                      set -eu
+                      umask 077
+                      mkdir -p "$HOME/finsight-releases/$(Build.BuildId)"
+                      chmod 700 "$HOME/finsight-releases" "$HOME/finsight-releases/$(Build.BuildId)"
+                - task: CopyFilesOverSSH@0
+                  displayName: Transfer release over SSH
+                  inputs:
+                    sshEndpoint: ${{ parameters.ec2SshServiceConnection }}
+                    sourceFolder: $(Pipeline.Workspace)/release
+                    contents: |
+                      compose.yml
+                      release.sh
+                      app.env
+                      release.env
+                    targetFolder: ~/finsight-releases/$(Build.BuildId)
+                    cleanTargetFolder: false
+                    failOnEmptySource: true
+                - task: SSH@0
+                  displayName: Deploy selected service
+                  inputs:
+                    sshEndpoint: ${{ parameters.ec2SshServiceConnection }}
+                    runOptions: inline
+                    inline: |
+                      set -eu
+                      bash "$HOME/finsight-releases/$(Build.BuildId)/release.sh"
+                    failOnStdErr: false
+                - bash: |
+                    rm -f "$RELEASE/app.env" "$RELEASE/release.env"
+                  displayName: Remove temporary runner secrets
+                  condition: always()
+                  env:
+                    RELEASE: $(Pipeline.Workspace)/release

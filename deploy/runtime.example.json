@@ -1,0 +1,15 @@
+{
+  "DATABASE_URL": "postgresql+asyncpg://user:password@database-host:5432/finsight",
+  "DATABASE_SSL": true,
+  "REDIS_URL": "rediss://default:password@redis-host:6379/0",
+  "QDRANT_URL": "https://your-qdrant-host:6333",
+  "QDRANT_API_KEY": "replace-me",
+  "SECRET_KEY": "keep-your-existing-production-secret",
+  "FRONTEND_URL": "https://your-frontend-domain",
+  "LLM_PROVIDER": "groq",
+  "GROQ_API_KEY": "replace-me",
+  "POSTMARK_SERVER_TOKEN": "replace-me",
+  "POSTMARK_FROM_EMAIL": "FinSight AI <noreply@your-domain>",
+  "POSTMARK_MESSAGE_STREAM": "outbound",
+  "DEBUG": false
+}

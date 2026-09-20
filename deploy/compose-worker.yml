@@ -1,0 +1,28 @@
+services:
+  worker:
+    image: ${SERVICE_IMAGE:?Set SERVICE_IMAGE}
+    container_name: finsight-worker
+    hostname: finsight-worker
+    command: celery -A app.worker.celery_app worker --loglevel=info --pool=solo
+    env_file:
+      - path: ./app.env
+        format: raw
+    restart: unless-stopped
+    stop_grace_period: 31m
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - finsight-prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d celery@finsight-worker --timeout 10 | grep -q pong"]
+      interval: 30s
+      timeout: 20s
+      retries: 4
+      start_period: 120s
+volumes:
+  uploads_data:
+    external: true
+    name: ${UPLOADS_VOLUME:?Use the existing production uploads volume}
+networks:
+  finsight-prod-network:
+    driver: bridge
