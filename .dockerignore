@@ -1,0 +1,11 @@
+# Only application code and dependency/migration files enter the image.
+**
+!requirements.txt
+!app/
+!app/**
+!alembic/
+!alembic/**
+!alembic.ini
+!Dockerfile
+**/__pycache__/
+**/*.pyc
