@@ -1,0 +1,31 @@
+# Create a separate Azure pipeline for each entry file. See deploy/README.md.
+trigger:
+  branches:
+    include: [main]
+  paths:
+    include:
+      - app/core/**
+      - app/models/**
+      - app/services/**
+      - app/__init__.py
+      - alembic/**
+      - alembic.ini
+      - requirements.txt
+      - Dockerfile
+      - .dockerignore
+      - deploy/**
+      - tests/**
+      - app/api/**
+      - app/main.py
+      - app/worker/**
+      - azure-pipelines.yml
+pr: none
+parameters:
+  - name: dockerHubRepository
+    type: string
+    default: harshithdshetty/finsight-api
+extends:
+  template: deploy/pipeline.yml
+  parameters:
+    serviceName: api
+    dockerHubRepository: ${{ parameters.dockerHubRepository }}
