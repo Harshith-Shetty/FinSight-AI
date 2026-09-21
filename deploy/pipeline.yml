@@ -55,6 +55,11 @@ stages:
               containerRegistry: ${{ parameters.dockerHubServiceConnection }}
               repository: ${{ parameters.dockerHubRepository }}
               tags: $(Build.BuildId)
+          - task: Docker@2
+            displayName: Authenticate release artifact pull
+            inputs:
+              command: login
+              containerRegistry: ${{ parameters.dockerHubServiceConnection }}
           - bash: |
               set -euo pipefail
               mkdir -p "$RELEASE"
@@ -66,6 +71,12 @@ stages:
             env:
               IMAGE: docker.io/${{ parameters.dockerHubRepository }}:$(Build.BuildId)
               RELEASE: $(Build.ArtifactStagingDirectory)/release
+          - task: Docker@2
+            displayName: Clear registry authentication
+            condition: always()
+            inputs:
+              command: logout
+              containerRegistry: ${{ parameters.dockerHubServiceConnection }}
           - publish: $(Build.ArtifactStagingDirectory)/release
             artifact: release
 
