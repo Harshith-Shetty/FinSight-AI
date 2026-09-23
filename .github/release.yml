@@ -1,0 +1,65 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: AI research and document intelligence
+      labels:
+        - ai
+        - rag
+        - research
+        - citations
+    - title: Product features
+      labels:
+        - feature
+        - enhancement
+    - title: User interface
+      labels:
+        - frontend
+        - ui
+        - ux
+    - title: Fixes
+      labels:
+        - bug
+        - fix
+    - title: Deployment and infrastructure
+      labels:
+        - ci
+        - deployment
+        - devops
+        - infrastructure
+    - title: Database
+      labels:
+        - database
+        - migration
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: Other changes
+      labels:
+        - "*"
+
+  change-template: "- $TITLE (#$NUMBER) by @$AUTHOR"
+
+  version-resolver:
+    major:
+      labels:
+        - breaking-change
+    minor:
+      labels:
+        - feature
+        - enhancement
+    patch:
+      labels:
+        - bug
+        - fix
+        - dependencies
+    default: patch
+
+  template: |
+    ## What's changed
+
+    $CHANGES
