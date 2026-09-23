@@ -6,6 +6,7 @@ Supports environment-based configuration for easy provider switching.
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from typing import Optional
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 class Settings(BaseSettings):
@@ -83,6 +84,18 @@ class Settings(BaseSettings):
         elif v.startswith("postgresql://"):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
+
+    @field_validator("REDIS_URL", "CELERY_BROKER_URL", "CELERY_RESULT_BACKEND", mode="before")
+    @classmethod
+    def configure_redis_tls(cls, value: str) -> str:
+        """Require certificate validation for secure Redis connections."""
+        if not isinstance(value, str) or not value.lower().startswith("rediss://"):
+            return value
+
+        parsed = urlsplit(value)
+        query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        query.setdefault("ssl_cert_reqs", "required")
+        return urlunsplit(parsed._replace(query=urlencode(query)))
     
     class Config:
         env_file = ".env"
