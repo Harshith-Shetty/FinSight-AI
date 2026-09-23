@@ -2,8 +2,16 @@
 Celery application configuration.
 """
 
+import os
+
 from celery import Celery
 from app.core.config import settings
+
+# Celery reads these environment variables after its constructor arguments.
+# Keep that higher-precedence source aligned with the validated settings so a
+# rediss:// connection retains its required TLS certificate policy.
+os.environ["CELERY_BROKER_URL"] = settings.CELERY_BROKER_URL
+os.environ["CELERY_RESULT_BACKEND"] = settings.CELERY_RESULT_BACKEND
 
 # Create Celery app
 celery_app = Celery(

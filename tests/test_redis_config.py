@@ -1,3 +1,6 @@
+import os
+import subprocess
+import sys
 import unittest
 
 from app.core.config import Settings
@@ -37,6 +40,38 @@ class RedisTLSConfigTests(unittest.TestCase):
         self.assertEqual(settings.REDIS_URL, url)
         self.assertEqual(settings.CELERY_BROKER_URL, url)
         self.assertEqual(settings.CELERY_RESULT_BACKEND, url)
+
+    def test_celery_keeps_secure_redis_tls_query_from_environment(self):
+        secure_url = "rediss://user:password@redis.example.com:6380/0"
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "DATABASE_URL": "postgresql://db",
+                "REDIS_URL": secure_url,
+                "CELERY_BROKER_URL": secure_url,
+                "CELERY_RESULT_BACKEND": secure_url,
+                "QDRANT_URL": "https://qdrant",
+                "SECRET_KEY": "secret",
+            }
+        )
+        command = (
+            "from urllib.parse import urlsplit, parse_qsl; "
+            "from app.worker.celery_app import celery_app; "
+            "print(dict(parse_qsl(urlsplit(celery_app.conf.broker_url).query))"
+            ".get('ssl_cert_reqs')); "
+            "print(dict(parse_qsl(urlsplit(celery_app.conf.result_backend).query))"
+            ".get('ssl_cert_reqs'))"
+        )
+
+        result = subprocess.run(
+            [sys.executable, "-c", command],
+            env=environment,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(result.stdout.splitlines(), ["required", "required"])
 
 
 if __name__ == "__main__":
