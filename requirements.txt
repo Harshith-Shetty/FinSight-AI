@@ -25,7 +25,7 @@ groq==0.4.1
 httpx==0.26.0
 
 # Embeddings and NLP
-sentence-transformers==2.3.1
+sentence-transformers==5.6.0
 torch==2.8.0
 transformers==4.36.2
 rank-bm25==0.2.2
